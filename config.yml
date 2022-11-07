@@ -1,0 +1,8 @@
+tesseract:
+  psm:
+    receipt: 6
+    price: 12
+receipt:
+  first-word: aantal
+  last-word: voordeel
+  pixel-distance: 50
