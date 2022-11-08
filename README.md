@@ -33,3 +33,10 @@ Process:
  ['1', 'AH', 'SPINAZIE', '1,55'],
  ['2', 'SUBTOTAAL', '4,34']]
  ```
+
+ appie://login-exit?code=010fccd2-0d31-4b5a-9de9-4c63e663275c
+{
+	"access_token": "273392689_f72-4733-9d0b-30cf448c414e",
+	"refresh_token": "8a517efd-af2e-4794-8353-81a371787637",
+	"expires_in": 7199
+}

@@ -1,8 +1,18 @@
-tesseract:
-  psm:
-    receipt: 6
-    price: 12
+2captcha:
+  api_key: 
+api:
+  access_token: 
+  code: 
+  refresh_token: 
+database:
+  path: receipt.db
+  type: sqlite
+dpi: 300
 receipt:
   first-word: aantal
-  last-word: voordeel
+  last-word: totaal
   pixel-distance: 50
+tesseract:
+  psm:
+    price: 12
+    receipt: 6
