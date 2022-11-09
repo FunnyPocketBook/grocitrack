@@ -17,6 +17,7 @@ def login():
     response = requests.post(TOKEN_URL, json=data, headers={"Content-Type": "application/json"})
     if response.status_code == 400 or response.status_code == 401:
         print("Please enter a new code. Refer to the README for more information.")
+        print("https://login.ah.nl/secure/oauth/authorize?client_id=appie&redirect_uri=appie://login-exit&response_type=code")
         code = input("Code: ")
         data["code"] = code
         config.set("api", {"code": code, "refresh_token": "", "access_token": ""})

@@ -1,4 +1,8 @@
 import yaml
+from pathlib import Path
+
+config_dir = Path(__file__).parent.parent
+config_path = config_dir / "config.yml"
 
 class Config(object):
     def __new__(cls):
@@ -8,11 +12,11 @@ class Config(object):
         return cls.instance
 
     def load(self):
-        with open("config.yml", "r") as f:
+        with open(config_path, "r") as f:
             self._config = yaml.safe_load(f)
 
     def save(self, config):
-        with open("config.yml", "w") as f:
+        with open(config_path, "w") as f:
             yaml.dump(config, f)
 
     def get(self, key):
