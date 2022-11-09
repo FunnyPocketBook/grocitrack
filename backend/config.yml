@@ -10,6 +10,8 @@ database:
   password: isTheBest
   type: sqlite
   username: receipt-scanner
+  mongodb:
+    connection_string: mongodb://receipt_scanner:receipt_scanner@10.10.194.5:27017
 dpi: 300
 receipt:
   first-word: aantal
@@ -19,3 +21,7 @@ tesseract:
   psm:
     price: 12
     receipt: 6
+food_data_central:
+  api_key: yCnboDnFY51g8TrZaU3SmrJmgpVvTnjeJ8GHK0An
+deepl:
+  api_key: 64fc9b4f-86da-ab24-f6bc-2331599c086d:fx
