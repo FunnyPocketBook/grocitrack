@@ -5,8 +5,11 @@ api:
   code:
   refresh_token:
 database:
-  path: receipt.db
+  host: null
+  name: receipt.db
+  password: null
   type: sqlite
+  username: null
 dpi: 300
 receipt:
   first-word: aantal

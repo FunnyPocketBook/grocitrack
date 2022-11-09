@@ -1,1 +1,3 @@
-/test.txt.txt
+*.db
+.vscode
+__pycache__

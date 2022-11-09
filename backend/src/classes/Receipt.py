@@ -1,8 +1,13 @@
 from datetime import datetime
 import requests
-import Location, Product, Discount
+from classes.Location import Location
+from classes.Product import Product
+from classes.Discount import Discount
 from util import string_to_float, parse_quantity
 from ah_api import update_tokens
+from config import Config
+
+config = Config()
 
 class Receipt:
     RECEIPT_DETAILS_URL = "https://api.ah.nl/mobile-services/v2/receipts/{transaction_id}"
@@ -20,10 +25,10 @@ class Receipt:
     def _get_receipt_details(self) -> list:
         """Fetch the details of a receipt from the API."""
         url = self.RECEIPT_DETAILS_URL.format(transaction_id=self.transaction_id)
-        response = requests.get(url, headers={"Authorization": f"Bearer {config['api']['access_token']}"})
+        response = requests.get(url, headers={"Authorization": f"Bearer {config.get('api')['access_token']}"})
         if response.status_code == 401:
             update_tokens()
-            response = requests.get(url, headers={"Authorization": f"Bearer {config['api']['access_token']}"})
+            response = requests.get(url, headers={"Authorization": f"Bearer {config.get('api')['access_token']}"})
         response.raise_for_status()
         return response.json()["receiptUiItems"]
 

@@ -9,18 +9,20 @@ from sqlalchemy import (
     DateTime,
     Table,
 )
+from config import Config
 
-config = {}
+config = Config()
 
-if config["database"]["type"] == "sqlite":
-    engine = create_engine("sqlite:///" + config["database"]["path"])
-elif config["database"]["type"] == "mysql":
+
+if config.get("database")["type"] == "sqlite":
+    engine = create_engine("sqlite:///" + config.get("database")["name"])
+elif config.get("database")["type"] == "mysql":
     engine = create_engine(
-        f"mysql+pymysql://{config['database']['username']}:{config['database']['password']}@{config['database']['host']}/{config['database']['database']}"
+        f"mysql+pymysql://{config.get('database')['username']}:{config.get('database')['password']}@{config.get('database')['host']}/{config.get('database')['name']}"
     )
-elif config["database"]["type"] == "postgresql" or config["database"]["type"] == "postgres":
+elif config.get("database")["type"] == "postgresql" or config.get("database")["type"] == "postgres":
     engine = create_engine(
-        f"postgresql://{config['database']['username']}:{config['database']['password']}@{config['database']['host']}/{config['database']['database']}"
+        f"postgresql://{config.get('database')['username']}:{config.get('database')['password']}@{config.get('database')['host']}/{config.get('database')['name']}"
     )
 else:
     raise ValueError("Database type not supported.")
@@ -82,17 +84,11 @@ class DbTag(Base):
     name = Column(String, nullable=False)
 
 
-# Many-to-many tags and items
-tags_items = Table(
-    "tags_products",
-    Base.metadata,
-    Column("tag_id", Integer, ForeignKey("tags.id")),
-    Column("product_id", Integer, ForeignKey("products.id")),
-)
+class TagItem(Base):
+    __tablename__ = "tags_items"
+    id = Column(Integer, primary_key=True)
+    tag = Column(Integer, ForeignKey("tags.id"))
+    item = Column(Integer, ForeignKey("products.id"))
+
 
 Base.metadata.create_all(engine)
-
-# filename = 'mymodel.png'
-# render_er(Base.metadata, filename)
-# imgplot = plt.imshow(mpimg.imread(filename))
-# plt.show()
