@@ -23,7 +23,10 @@ class Receipt:
 
 
     def _get_receipt_details(self) -> list:
-        """Fetch the details of a receipt from the API."""
+        """Fetches the details of a receipt from the API.
+        
+        Returns:
+            list: A list of receipt details."""
         url = self.RECEIPT_DETAILS_URL.format(transaction_id=self.transaction_id)
         response = requests.get(url, headers={"Authorization": f"Bearer {config.get('api')['access_token']}"})
         if response.status_code == 401:
@@ -32,8 +35,14 @@ class Receipt:
         response.raise_for_status()
         return response.json()["receiptUiItems"]
 
-    def _get_location(self, store):
-        """Set the store location of the receipt."""
+    def _get_location(self, store: dict) -> Location:
+        """Gets the store location of the receipt.
+        
+        Args:
+            store (dict): The store information from the API response.
+            
+        Returns:
+            Location: A Location object."""
         return Location(
             name=self.receipt_details[1]["value"],
             address=store["street"],
@@ -43,7 +52,11 @@ class Receipt:
         )
 
 
-    def _get_products(self) -> list:
+    def _get_products(self) -> list[Product]:
+        """Gets the products from the receipt.
+
+        Returns:
+            list: A list of Product objects."""
         receipt_rows = self.receipt_details
 
         # Remove all elements before "bonuskaart" (and that element itself) and after "subtotaal" to get only the products that have been purchased (without discounts etc.)
@@ -58,6 +71,10 @@ class Receipt:
 
 
     def _get_discounts(self) -> dict:
+        """Gets the discounts from the receipt.
+
+        Returns:
+            dict: A dictionary of Discount objects."""
         receipt_rows = self.receipt_details
 
         # Remove all elements before "subtotaal" (and that element itself) and after "uw voordeel" to get only the discounts that were applied
@@ -76,7 +93,7 @@ class Receipt:
         return discounts
     
     
-    def _parse_products(self, items: list) -> list:
+    def _parse_products(self, items: list) -> list[Product]:
         """Parse the products from the API response.
         
         Args:

@@ -7,7 +7,7 @@ api:
 database:
   host: 10.10.194.5
   name: receipt-scanner
-  password: isTheBest
+  password: password
   type: postgres
   username: receipt-scanner
   mongodb:
