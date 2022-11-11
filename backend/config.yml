@@ -8,7 +8,7 @@ database:
   host: 10.10.194.5
   name: receipt-scanner
   password: isTheBest
-  type: sqlite
+  type: postgres
   username: receipt-scanner
   mongodb:
     connection_string: mongodb://receipt_scanner:receipt_scanner@10.10.194.5:27017

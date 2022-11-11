@@ -1,6 +1,6 @@
 from sqlalchemy.orm import sessionmaker
 from database.db import DbReceipt, DbProduct, DbDiscount, DbLocation, engine
-from database.db_handler import DbHandler
+from database.DbHandler import DbHandler
 from ah_api import fetch_receipts
 from config import Config
 from classes.Receipt import Receipt

@@ -3,6 +3,6 @@ requests==2.22.0
 SQLAlchemy==1.4.29
 psycopg2==2.9.5
 pymysql==1.0.2
-supermarktconnector==0.8.1
+supermarktconnector @ git+https://github.com/FunnyPocketBook/SupermarktConnector
 pymongo==4.3.2
 deepl==1.11.0
