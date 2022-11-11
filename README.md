@@ -1,4 +1,4 @@
-# Receipt Parser (or something like that)
+# AH Receipt Parser (or something like that)
 
 ## Requirements
 
@@ -15,13 +15,24 @@ This application is using the API for the mobile AH app. Thanks to Rutgerdj for 
   - Enter your credentials on the website and login. The page might not change at all but new requests in the network tab will appear.
   - Filter the requests for status code 303
   - In the response header of the request, look for `location`. The value that comes after `?code=` is the code that needs to be put into `api.code`
+- Change directory to thr `backend/src` folder
 - Run `main.py`, for example `python main.py`
 
-### Todo
+### Functionalities
+Basically, what works now already is that all receipts and the groceries from the receipt are stored in a database. I want to add at least the categories (including translating them) to the database and include proper logging before I startsta the frontend.
 
+- [x] Authorization
+- [x] Database integration (sqlite, mysql, postgresql)
+- [x] Receipt parsing
+- [x] Product parsing
+  - [ ] Product categories
+
+### Todo
+- [ ] Add product categories
+- [ ] Proper logging
 - [ ] Discount not bound to any products
-- [ ] Frontend
+- [ ] Frontend in Vue.js
 
 ### ER Diagram
-
+Not quite up to date but close enough.
 ![ER Diagram](ER_diagram.png)
