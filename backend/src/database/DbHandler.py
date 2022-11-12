@@ -1,4 +1,4 @@
-from database.db import DbReceipt, DbProduct, DbDiscount, DbLocation, engine
+from database.db import DbReceipt, DbProduct, DbDiscount, DbLocation, DbCategory, DbCategoryHierarchy, engine
 from classes.Receipt import Receipt
 from classes.Location import Location
 from classes.Product import Product
@@ -56,6 +56,17 @@ class DbHandler:
         return self._session.query(DbLocation).filter_by(name=name).first()
 
 
+    def find_category(self, name: str) -> DbCategory:
+        """Finds a category by name
+
+        Args:
+            name (str): The name of the category
+
+        Returns:
+            DbCategory: The category with the given name"""
+        return self._session.query(DbCategory).filter_by(name=name).first()
+
+
     def add_location(self, location: Location) -> DbLocation:
         """Adds a location to the database
 
@@ -97,6 +108,24 @@ class DbHandler:
         self._session.commit()
         return dbReceipt
 
+    
+    def add_category(self, category: str, parent_id: int = None) -> DbCategory:
+        """Adds a category to the database
+
+        Args:
+            category (str): The name of the category
+            parent_id (int, optional): The id of the parent category. Defaults to None.
+
+        Returns:
+            DbCategory: The added category"""
+        dbCategory = DbCategory(name=category)
+        self._session.add(dbCategory)
+        self._session.commit()
+        dbCategoryHierarchy = DbCategoryHierarchy(parent_id=parent_id, child_id=dbCategory.id)
+        self._session.add(dbCategoryHierarchy)
+        self._session.commit()
+        return dbCategory
+
 
     def add_product(self, product: Product, receipt_id: int) -> DbProduct:
         """Adds a product to the database
@@ -108,12 +137,14 @@ class DbHandler:
         Returns:
             DbProduct: The added product"""
         dbProduct = DbProduct(
+            description=product.description,
             name=product.name,
             receipt=receipt_id,
             quantity=product.quantity,
             unit=product.unit,
             price=product.price,
             total_price=product.total_price,
+            categories=product.categories,
         )
         self._session.add(dbProduct)
         self._session.commit()

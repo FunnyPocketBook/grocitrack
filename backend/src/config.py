@@ -11,16 +11,23 @@ class Config(object):
             cls.instance.load()
         return cls.instance
 
+
     def load(self):
         with open(config_path, "r") as f:
             self._config = yaml.safe_load(f)
 
+
     def save(self, config):
         with open(config_path, "w") as f:
             yaml.dump(config, f)
+        
+    # Get nested values from the config, for example get("database", "host")
+    def get(self, *keys):
+        value = self._config
+        for key in keys:
+            value = value[key]
+        return value
 
-    def get(self, key):
-        return self._config[key]
 
     def set(self, key, value):
         self._config[key] = value

@@ -3,9 +3,10 @@ import requests
 from classes.Location import Location
 from classes.Product import Product
 from classes.Discount import Discount
-from util import string_to_float, parse_quantity
+from util import string_to_float
 from ah_api import update_tokens
 from config import Config
+import re
 
 config = Config()
 
@@ -94,7 +95,7 @@ class Receipt:
     
     
     def _parse_products(self, items: list) -> list[Product]:
-        """Parse the products from the API response.
+        """Parses the products from the API response.
         
         Args:
             items (list): The items from the API response.
@@ -107,7 +108,7 @@ class Receipt:
             if "statiegeld" in row["description"].lower():
                 product = Product(1.0, None, row["description"], None, string_to_float(row["amount"]), None)
             else:
-                quantity, unit = parse_quantity(row["quantity"])
+                quantity, unit = self._parse_quantity(row["quantity"])
                 price = string_to_float(row["price"]) if "price" in row else None
                 if row["indicator"] == "":
                     row["indicator"] = None
@@ -115,6 +116,23 @@ class Receipt:
                 product = Product(quantity, unit, row["description"], price, amount, row["indicator"])
             products.append(product)
         return products
+    
+    
+    def _parse_quantity(self, quantity: str) -> tuple[float, str]:
+        """Parses the quantity and unit from the quantity string.
+        
+        Args:
+            quantity (str): The quantity string.
+
+        Returns:
+            tuple[float, str]: The quantity and unit.
+        """
+        quantity = quantity.replace(",", ".")
+        regex_result = re.match(r'(\d+.\d+)([a-zA-Z]+)', quantity)
+        if quantity.isnumeric():
+            return float(quantity), None
+        elif regex_result:
+            return float(regex_result.group(1)), regex_result.group(2)
 
 
     def __repr__(self):

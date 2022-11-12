@@ -6,24 +6,6 @@ config = Config()
 
 translator = deepl.Translator(config.get("deepl")["api_key"])
 
-
-def parse_quantity(quantity: str) -> tuple[float, str]:
-    """Parses the quantity and unit from the quantity string.
-    
-    Args:
-        quantity (str): The quantity string.
-
-    Returns:
-        tuple[float, str]: The quantity and unit.
-    """
-    quantity = quantity.replace(",", ".")
-    regex_result = re.match(r'(\d+.\d+)([a-zA-Z]+)', quantity)
-    if quantity.isnumeric():
-        return float(quantity), None
-    elif regex_result:
-        return float(regex_result.group(1)), regex_result.group(2)
-
-
 def string_to_float(string: str) -> float:
     """Converts the string to a float.
     

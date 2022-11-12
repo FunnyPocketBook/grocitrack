@@ -9,7 +9,10 @@ REFRESH_TOKEN_URL = "https://api.ah.nl/mobile-auth/v1/auth/token/refresh"
 RECEIPTS_URL = "https://api.ah.nl/mobile-services/v1/receipts/"
 
 def login():
-    """Login to the API."""
+    """Uses the code from the config file to fetch the access token and refresh token.\
+    
+    Returns:
+        dict: A dictionary containing the access token and refresh token."""
     data = {
         "code": config.get("api")["code"],
         "clientId": "appie",
@@ -34,7 +37,7 @@ def login():
 
 
 def update_tokens():
-    """Update the access token and refresh token in the config file."""
+    """Updates the access token and refresh token in the config file."""
     tokens = fetch_new_tokens()
     data = {
         "access_token": tokens["access_token"],
@@ -45,7 +48,10 @@ def update_tokens():
 
 
 def fetch_new_tokens():
-    """Fetch new tokens using the refresh token."""
+    """Fetches new tokens using the refresh token.
+    
+    Returns:
+        dict: A dictionary containing the access token and refresh token."""
     data = {
         "refreshToken": config.get("api")["refresh_token"],
         "clientId": "appie",
@@ -58,7 +64,10 @@ def fetch_new_tokens():
 
 
 def fetch_receipts():
-    """Fetch the receipts from the API."""
+    """Fetches the receipts from the API.
+    
+    Returns:
+        dict: A dictionary containing the receipts."""
     response = requests.get(RECEIPTS_URL, headers={"Authorization": f"Bearer {config.get('api')['access_token']}"})
     if response.status_code == 401:
         update_tokens()

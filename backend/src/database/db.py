@@ -47,19 +47,21 @@ class DbReceipt(Base):
 class DbProduct(Base):
     __tablename__ = "products"
     id = Column(Integer, primary_key=True)
+    description = Column(String(255))
     name = Column(String(255))
-    receipt = Column(Integer, ForeignKey("receipts.id"))
+    receipt = Column(Integer, ForeignKey("receipts.id"), nullable=False)
     quantity = Column(Integer)
     unit = Column(String(255))
     price = Column(Float)
     total_price = Column(Float)
+    categories = Column(String(255))
     category = Column(Integer, ForeignKey("categories.id"))
     
 
 class DbDiscount(Base):
     __tablename__ = "discounts"
     id = Column(Integer, primary_key=True)
-    receipt = Column(Integer, ForeignKey("receipts.id"))
+    receipt = Column(Integer, ForeignKey("receipts.id"), nullable=False)
     type = Column(String(255))
     description = Column(String(255))
     amount = Column(Float)
@@ -68,30 +70,31 @@ class DbDiscount(Base):
 class DbCategory(Base):
     __tablename__ = "categories"
     id = Column(Integer, primary_key=True)
-    name = Column(String(255), nullable=False)
+    name = Column(String(255), nullable=False, unique=True)
 
 
 class DbLocation(Base):
     __tablename__ = "locations"
     id = Column(Integer, primary_key=True)
-    name = Column(String(255))
+    name = Column(String(255), nullable=False, unique=True)
     address = Column(String(255))
     house_number = Column(String(255))
     city = Column(String(255))
     postal_code = Column(String(255))
 
 
-class DbTag(Base):
-    __tablename__ = "tags"
+class DbCategoryItem(Base):
+    __tablename__ = "categories_items"
     id = Column(Integer, primary_key=True)
-    name = Column(String(255), nullable=False)
-
-
-class TagItem(Base):
-    __tablename__ = "tags_items"
-    id = Column(Integer, primary_key=True)
-    tag = Column(Integer, ForeignKey("tags.id"))
+    tag = Column(Integer, ForeignKey("categories.id"))
     item = Column(Integer, ForeignKey("products.id"))
+
+
+class DbCategoryHierarchy(Base):
+    __tablename__ = "categories_hierarchy"
+    id = Column(Integer, primary_key=True)
+    parent = Column(Integer, ForeignKey("categories.id"))
+    child = Column(Integer, ForeignKey("categories.id"))
 
 
 Base.metadata.create_all(engine)
