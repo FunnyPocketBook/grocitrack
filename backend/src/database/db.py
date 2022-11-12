@@ -8,6 +8,7 @@ from sqlalchemy import (
     String,
     DateTime,
     LargeBinary,
+    Boolean,
 )
 from config import Config
 
@@ -47,6 +48,7 @@ class DbReceipt(Base):
 class DbProduct(Base):
     __tablename__ = "products"
     id = Column(Integer, primary_key=True)
+    product_id = Column(String(255))
     description = Column(String(255))
     name = Column(String(255))
     receipt = Column(Integer, ForeignKey("receipts.id"), nullable=False)
@@ -54,8 +56,8 @@ class DbProduct(Base):
     unit = Column(String(255))
     price = Column(Float)
     total_price = Column(Float)
-    categories = Column(String(255))
-    category = Column(Integer, ForeignKey("categories.id"))
+    potential_products = Column(LargeBinary)
+    product_not_found = Column(Boolean)
     
 
 class DbDiscount(Base):
@@ -71,6 +73,7 @@ class DbCategory(Base):
     __tablename__ = "categories"
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False, unique=True)
+    taxonomy_id = Column(String(255), nullable=False, unique=True)
 
 
 class DbLocation(Base):
@@ -83,11 +86,11 @@ class DbLocation(Base):
     postal_code = Column(String(255))
 
 
-class DbCategoryItem(Base):
-    __tablename__ = "categories_items"
+class DbCategoryProduct(Base):
+    __tablename__ = "categories_products"
     id = Column(Integer, primary_key=True)
-    tag = Column(Integer, ForeignKey("categories.id"))
-    item = Column(Integer, ForeignKey("products.id"))
+    taxonomy_id = Column(String(255), ForeignKey("categories.id"))
+    product_id = Column(String(255), ForeignKey("products.id"))
 
 
 class DbCategoryHierarchy(Base):

@@ -2,6 +2,8 @@ from supermarktconnector.ah import AHConnector
 import pandas as pd
 import re
 from math import isnan
+import pickle
+from classes.Category import Category
 
 
 class Product:
@@ -18,6 +20,7 @@ class Product:
         self.total_price = total_price
         self.indicator = indicator
         self.potential_products = None
+        self.product_not_found = False
         self._set_details()
 
 
@@ -31,10 +34,11 @@ class Product:
         if "statiegeld" in self.description.lower():
             return
         result = self.connector.search_products(query=self.description, size=200, page=0)
-        df = pd.DataFrame(result["products"], columns=["webshopId", "title", "unitPriceDescription", "priceBeforeBonus", "mainCategory", "subCategory", "brand", "shopType"])
-        df["unitPriceDescription"] = df["unitPriceDescription"].apply(self._clean_unit_price_description)
-        product_not_found = False
-        multiple_products_found = False
+        df = pd.DataFrame(result["products"], columns=result["products"][0].keys())
+        if "unitPriceDescription" in df.columns:
+            df["unitPriceDescription"] = df["unitPriceDescription"].apply(self._clean_unit_price_description)
+        else:
+            df["unitPriceDescription"] = None
         if self.unit and self.unit.lower() == "kg":
             filtered_rows = df[df["unitPriceDescription"] == self.price]
         elif self.quantity == 1:
@@ -45,47 +49,48 @@ class Product:
         length = filtered_rows.shape[0]
         if length == 0:
             row = df.iloc[0]
-            product_not_found = True
+            self.potential_products = pickle.dumps(result["products"])
+            self.product_not_found = True
         elif length == 1:
             row = filtered_rows.iloc[0]
         else:
             row = filtered_rows.iloc[0]
-            multiple_products_found = True
-            self.potential_products = filtered_rows
+            self.potential_products = pickle.dumps(filtered_rows.to_dict(orient="records"))
+            self.product_not_found = True
         
         product_details = self.connector.get_product_details(row["webshopId"])
         category_details = self.connector.get_product_category_details(product_details)
-        if product_not_found or multiple_products_found:
-            self.name = None
-            self.product_id = None
-        else:
-            self.name = row["title"]
-            self.product_id = row["webshopId"]
+        self.name = row["title"]
+        self.product_id = str(row["webshopId"])
         categories = self._get_categories(category_details, row["webshopId"], row["subCategory"])
-        self.categories = " > ".join(categories)
+        self.categories = []
+        for category in categories:
+            self.categories.append(Category(name=category["name"], taxonomy_id=category["id"]))
 
 
-    def _get_categories(self, category_details: dict, product_id: int, product_subcategory: str) -> list:
+    def _get_categories(self, category_details: dict, product_id: int, taxonomy: str) -> list[dict]:
         """Gets the categories of the product.
 
         Args:
             category_details (dict): The category details of the product.
+            product_id (int): The product id.
+            taxonomy_id (int): The taxonomy id.
 
         Returns:
-            list: The categories of the product.
+            list[dict]: The categories of the product.
         """
         cards = category_details["cards"]
         card = None
         for c in cards:
-            if product_id in c["products"]:
+            if c["products"][0]["taxonomies"][-1]["name"] == taxonomy:
+                card = c
+            if c["id"] == product_id:
                 card = c
                 break
         if not card:
-            # TODO: Check if the subcategory is in the categories
             card = cards[0]
         product = card["products"][0]
-        taxonomies = product["taxonomies"]
-        taxonomy_names = [taxonomy["name"] for taxonomy in taxonomies]
+        taxonomy_names = product["taxonomies"]
         return taxonomy_names
 
 

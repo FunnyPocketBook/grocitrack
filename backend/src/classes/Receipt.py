@@ -7,6 +7,8 @@ from util import string_to_float
 from ah_api import update_tokens
 from config import Config
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 
 config = Config()
 
@@ -92,6 +94,61 @@ class Receipt:
             discounts["discounts"].append(discount)
             discounts["total_discount"] += discount_amount
         return discounts
+
+
+    def get_categories(self) -> dict:
+        """Gets the categories of the products in the receipt.
+
+        Returns:
+            dict: A dictionary of categories."""
+        category_dict = {}
+        # build a tree of categories using a nested dictionary recursively
+        for product in self.products:
+            category_dict = self._build_category_tree(category_dict, product.categories)
+        return category_dict
+
+
+    def _build_category_tree(self, category_dict: dict, categories: list) -> dict:
+        """Builds a tree of categories using a nested dictionary recursively. The category name is the key and the values are the taxonomy ID of the category and a list of subcategories.
+        
+        Args:
+            category_dict (dict): The dictionary to add the category to.
+            categories (list): A list of categories.
+
+        Returns:
+            dict: A dictionary of categories."""
+        if categories is None:
+            return category_dict
+        if len(categories) == 0:
+            return category_dict
+        category = categories[0]
+        if category.name not in category_dict:
+            category_dict[category.name] = {"category": category, "subcategories": {}}
+        category_dict[category.name]["subcategories"] = self._build_category_tree(category_dict[category.name]["subcategories"], categories[1:])
+        return category_dict
+
+
+
+
+    def _parse_product(self, item: dict) -> Product:
+        """Parses a product from the receipt.
+        
+        Args:
+            item (dict): The product information from the API response.
+
+        Returns:
+            Product: A Product object.
+        """
+        if "statiegeld" in item["description"].lower():
+            product = Product(1.0, None, item["description"], None, string_to_float(item["amount"]), None)
+        else:
+            quantity, unit = self._parse_quantity(item["quantity"])
+            price = string_to_float(item["price"]) if "price" in item else None
+            if item["indicator"] == "":
+                item["indicator"] = None
+            amount = string_to_float(item["amount"])
+            product = Product(quantity, unit, item["description"], price, amount, item["indicator"])
+        return product
     
     
     def _parse_products(self, items: list) -> list[Product]:
@@ -104,18 +161,13 @@ class Receipt:
             list: A list of Product objects.
         """
         products = []
-        for row in items:
-            if "statiegeld" in row["description"].lower():
-                product = Product(1.0, None, row["description"], None, string_to_float(row["amount"]), None)
-            else:
-                quantity, unit = self._parse_quantity(row["quantity"])
-                price = string_to_float(row["price"]) if "price" in row else None
-                if row["indicator"] == "":
-                    row["indicator"] = None
-                amount = string_to_float(row["amount"])
-                product = Product(quantity, unit, row["description"], price, amount, row["indicator"])
-            products.append(product)
-        return products
+        with ThreadPoolExecutor(max_workers=int(config.get("max_workers"))) as executor:
+            futures = [executor.submit(self._parse_product, item) for item in items]
+            for future in as_completed(futures):
+                result = future.result()
+                if result is not None:
+                    products.append(result)
+            return products
     
     
     def _parse_quantity(self, quantity: str) -> tuple[float, str]:
