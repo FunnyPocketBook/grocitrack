@@ -14,7 +14,7 @@ def login():
     Returns:
         dict: A dictionary containing the access token and refresh token."""
     data = {
-        "code": config.get("api")["code"],
+        "code": config.get("api", "code"),
         "clientId": "appie",
     }
     response = requests.post(TOKEN_URL, json=data, headers={"Content-Type": "application/json"})
@@ -30,7 +30,7 @@ def login():
     data = {
         "access_token": tokens["access_token"],
         "refresh_token": tokens["refresh_token"],
-        "code": config.get("api")["code"],
+        "code": config.get("api", "code"),
     }
     config.set("api", data)
     return tokens
@@ -42,7 +42,7 @@ def update_tokens():
     data = {
         "access_token": tokens["access_token"],
         "refresh_token": tokens["refresh_token"],
-        "code": config.get("api")["code"],
+        "code": config.get("api", "code"),
     }
     config.set("api", data)
 
@@ -53,7 +53,7 @@ def fetch_new_tokens():
     Returns:
         dict: A dictionary containing the access token and refresh token."""
     data = {
-        "refreshToken": config.get("api")["refresh_token"],
+        "refreshToken": config.get("api", "refresh_token"),
         "clientId": "appie",
     }
     response = requests.post(REFRESH_TOKEN_URL, json=data, headers={"Content-Type": "application/json"})

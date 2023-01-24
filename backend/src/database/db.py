@@ -16,13 +16,13 @@ from config import Config
 config = Config()
 
 
-if config.get("database")["type"] == "sqlite":
+if config.get("database", "type") == "sqlite":
     engine = create_engine(f"sqlite:///{config.get('database')['name']}.db")
-elif config.get("database")["type"] == "mysql":
+elif config.get("database", "type") == "mysql":
     engine = create_engine(
         f"mysql+pymysql://{config.get('database')['username']}:{config.get('database')['password']}@{config.get('database')['host']}/{config.get('database')['name']}"
     )
-elif config.get("database")["type"] == "postgresql" or config.get("database")["type"] == "postgres":
+elif config.get("database", "type") == "postgresql" or config.get("database", "type") == "postgres":
     engine = create_engine(
         f"postgresql://{config.get('database')['username']}:{config.get('database')['password']}@{config.get('database')['host']}/{config.get('database')['name']}"
     )

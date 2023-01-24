@@ -4,7 +4,7 @@ from config import Config
 
 config = Config()
 
-translator = deepl.Translator(config.get("deepl")["api_key"])
+translator = deepl.Translator(config.get("deepl", "api_key"))
 
 def string_to_float(string: str) -> float:
     """Converts the string to a float.
