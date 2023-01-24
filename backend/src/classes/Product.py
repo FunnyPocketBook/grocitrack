@@ -34,6 +34,10 @@ class Product:
         if "statiegeld" in self.description.lower():
             return
         result = self.connector.search_products(query=self.description, size=200, page=0)
+        if result["products"] == []:
+            # TODO: Use NLP to split the description into words and search for each word separately.
+            self.product_not_found = True
+            return
         df = pd.DataFrame(result["products"], columns=result["products"][0].keys())
         if "unitPriceDescription" in df.columns:
             df["unitPriceDescription"] = df["unitPriceDescription"].apply(self._clean_unit_price_description)
@@ -59,6 +63,12 @@ class Product:
             self.product_not_found = True
         
         product_details = self.connector.get_product_details(row["webshopId"])
+        # TODO: Get the categories of the product. This is a bit tricky because the API doesn't return all the categories of the product. It only returns the immediate category of the product. So we need to do the following and then match the product category to the category in the list:
+        # 1. Get all the categories that exist with https://api.ah.nl/mobile-services/v1/product-shelves/categories
+        # 2. This returns a list of categories
+        # 3. Loop through the list of categories and use the ID to get the subcategories using the endpoint https://api.ah.nl/mobile-services/v1/product-shelves/categories/{id}/sub-categories. 
+        # This returns the category itself and a list of children.
+        # 4. Recursively do this until there are no more children.
         category_details = self.connector.get_product_category_details(product_details)
         self.name = row["title"]
         self.product_id = str(row["webshopId"])
