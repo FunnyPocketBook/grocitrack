@@ -141,6 +141,8 @@ class Receipt:
         """
         if "statiegeld" in item["description"].lower():
             product = Product(1.0, None, item["description"], None, string_to_float(item["amount"]), None)
+        elif "airmiles" in item["description"].lower():
+            product = Product(1.0, None, item["description"], None, 0, None)
         else:
             quantity, unit = self._parse_quantity(item["quantity"])
             price = string_to_float(item["price"]) if "price" in item else None
