@@ -34,6 +34,17 @@ Base = declarative_base()
 
 
 class DbReceipt(Base):
+    """Receipt model
+
+    Attributes:
+        id (int): Receipt id
+        transaction_id (str): Transaction id
+        datetime (datetime): Receipt datetime
+        location (int): Location id
+        total_price (float): Receipt total price
+        total_discount (float): Receipt total discount
+        pickle (bytes): Receipt pickle
+    """
     __tablename__ = "receipts" 
 
     id = Column(Integer, primary_key=True)
@@ -46,6 +57,21 @@ class DbReceipt(Base):
 
 
 class DbProduct(Base):
+    """Product model
+
+    Attributes:
+        id (int): Product id
+        product_id (str): Product id
+        description (str): Product description
+        name (str): Product name
+        receipt (int): Receipt id
+        quantity (int): Product quantity
+        unit (str): Product unit
+        price (float): Product price
+        total_price (float): Product total price
+        potential_products (bytes): Potential products
+        product_not_found (bool): Product not found
+    """
     __tablename__ = "products"
     id = Column(Integer, primary_key=True)
     product_id = Column(String(255))
@@ -61,6 +87,15 @@ class DbProduct(Base):
     
 
 class DbDiscount(Base):
+    """Discount model
+
+    Attributes:
+        id (int): Discount id
+        receipt (int): Receipt id
+        type (str): Discount type
+        description (str): Discount description
+        amount (float): Discount amount
+    """
     __tablename__ = "discounts"
     id = Column(Integer, primary_key=True)
     receipt = Column(Integer, ForeignKey("receipts.id"), nullable=False)
@@ -70,13 +105,32 @@ class DbDiscount(Base):
 
 
 class DbCategory(Base):
+    """Category model
+
+    Attributes:
+        id (int): Category id
+        name (str): Category name
+        slug (str): Category slug
+        taxonomy_id (str): Category taxonomy id
+    """
     __tablename__ = "categories"
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False, unique=True)
+    slug = Column(String(255), nullable=False, unique=True)
     taxonomy_id = Column(String(255), nullable=False, unique=True)
 
 
 class DbLocation(Base):
+    """Location model
+    
+    Attributes:
+        id (int): Location id
+        name (str): Location name
+        address (str): Location address
+        house_number (str): Location house number
+        city (str): Location city
+        postal_code (str): Location postal code
+    """
     __tablename__ = "locations"
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False, unique=True)
@@ -87,17 +141,31 @@ class DbLocation(Base):
 
 
 class DbCategoryProduct(Base):
+    """CategoryProduct model
+
+    Attributes:
+        id (int): CategoryProduct id
+        taxonomy_id (str): Category taxonomy id
+        product_id (str): Product id
+    """
     __tablename__ = "categories_products"
     id = Column(Integer, primary_key=True)
-    taxonomy_id = Column(String(255), ForeignKey("categories.id"))
-    product_id = Column(String(255), ForeignKey("products.id"))
+    taxonomy_id = Column(String(255), ForeignKey("categories.taxonomy_id"))
+    product_id = Column(String(255), ForeignKey("products.product_id"))
 
 
 class DbCategoryHierarchy(Base):
+    """CategoryHierarchy model
+    
+    Attributes:
+        id (int): CategoryHierarchy id
+        parent (str): Parent category taxonomy id
+        child (str): Child category taxonomy id
+    """
     __tablename__ = "categories_hierarchy"
     id = Column(Integer, primary_key=True)
-    parent = Column(Integer, ForeignKey("categories.id"))
-    child = Column(Integer, ForeignKey("categories.id"))
+    parent = Column(Integer, ForeignKey("categories.taxonomy_id"))
+    child = Column(Integer, ForeignKey("categories.taxonomy_id"))
 
 
 Base.metadata.create_all(engine)

@@ -15,7 +15,7 @@ class Product:
         self.description = description
         self.name = None
         self.product_id = None
-        self.categories = None
+        self.category = None
         self.price = price
         self.total_price = total_price
         self.indicator = indicator
@@ -72,6 +72,7 @@ class Product:
         # category_details = self.connector.get_product_category_details(product_details)
         self.name = row["title"]
         self.product_id = str(row["webshopId"])
+        self.category = product_details["productCard"]["subCategoryId"]
         # categories = self._get_categories(category_details, row["webshopId"], row["subCategory"])
         # self.categories = []
         # for category in categories:

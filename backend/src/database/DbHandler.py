@@ -3,6 +3,7 @@ from classes.Receipt import Receipt
 from classes.Location import Location
 from classes.Product import Product
 from classes.Discount import Discount
+from classes.Category import Category
 from sqlalchemy.orm import sessionmaker
 import pickle
 import logging
@@ -71,15 +72,15 @@ class DbHandler:
         return self._session.query(DbLocation).filter_by(name=name).first()
 
 
-    def find_category(self, name: str) -> DbCategory:
-        """Finds a category by name
+    def find_category(self, taxonomy_id: str) -> DbCategory:
+        """Finds a category by taxonomy ID
 
         Args:
-            name (str): The name of the category
+            taxonomy_id (str): The taxonomy ID of the category
 
         Returns:
             DbCategory: The category with the given name"""
-        return self._session.query(DbCategory).filter_by(name=name).first()
+        return self._session.query(DbCategory).filter_by(taxonomy_id=taxonomy_id).first()
     
 
     def get_categories(self) -> list[DbCategory]:
@@ -88,6 +89,27 @@ class DbHandler:
         Returns:
             list[DbCategory]: The list of categories"""
         return self._session.query(DbCategory).all()
+    
+
+    def get_category_hierarchy(self, taxonomy_id: str, result: list[DbCategory]) -> list[DbCategory]:
+        """Gets all parent categories based on taxonomy_id from the database
+
+        Args:
+            taxonomy_id (str): The taxonomy ID of the category
+            result (list[DbCategory]): The list of categories to add to (recursive)
+
+        Returns:
+            list[DbCategory]: The list of categories"""
+        dbCategory = self.find_category(taxonomy_id)
+        if dbCategory is None:
+            log.error(f"Category \"{taxonomy_id}\" not found")
+            return None
+        result.append(dbCategory)
+        dbCategoryHierarchies = self._session.query(DbCategoryHierarchy).filter_by(child=taxonomy_id).all()
+        for dbCategoryHierarchy in dbCategoryHierarchies:
+            self.get_category_hierarchy(dbCategoryHierarchy.parent, result)
+        return result
+        
 
     
     def set_categories_for_products(self, products: list[Product]) -> list[DbCategoryProduct]:
@@ -109,29 +131,25 @@ class DbHandler:
 
         Args:
             product (Product): The product to set the categories for"""
-        dbCategoryProducts = []
         dbProduct = self.find_product(product)
-        if dbProduct is not None:
-            if product.categories is not None:
-                for category in product.categories:
-                    dbCategory = self.find_category(category.name)
-                    if dbCategory is not None:
-                        dbCategoryProduct = DbCategoryProduct(
-                            product_id=dbProduct.product_id,
-                            taxonomy_id=dbCategory.taxonomy_id,
-                        )
-                        self._session.add(dbCategoryProduct)
-                        self._session.flush()
-                        dbCategoryProducts.append(dbCategoryProduct)
-                        log.info(f"Added category \"{category.name}\" to product \"{product.name}\"")
-                    else:
-                        log.error(f"Category \"{category.name}\" not found")
-            else:
-                log.error(f"Product \"{product.name}\" has no categories")
-        else:
+        if dbProduct is None:
             log.error(f"Product \"{product.name}\" not found")
+            return None
+        if product.category is None:
+            log.error(f"Product \"{product.name}\" has no categories")
+            return None
+        # Get all parent categories based on the taxonomy ID from product.category
+        dbCategories = self.get_category_hierarchy(product.category, [])
+        for dbCategory in dbCategories:
+            dbCategoryProduct = DbCategoryProduct(
+                product_id=dbProduct.product_id,
+                taxonomy_id=dbCategory.taxonomy_id,
+            )
+            self._session.add(dbCategoryProduct)
+            self._session.flush()
+            log.info(f"Added category \"{dbCategory.name}\" to product \"{product.name}\"")
         self._session.commit()
-        return dbCategoryProducts
+        return dbCategories
 
     
     def add_location(self, location: Location) -> DbLocation:
@@ -175,49 +193,89 @@ class DbHandler:
         self._session.commit()
         log.info(f"Added receipt from {receipt.datetime} to database")
         return dbReceipt
+    
 
-
-    def add_categories(self, categories: dict) -> list[DbCategory]:
-        """Adds categories to the database recursively. 
-        If a category already exists, it will not be added again.
-
-        Args:
-            categories (dict): The categories to add
-            
-        Returns:
-            list[DbCategory]: The added categories"""
-        dbCategories = []
-        for category in categories:
-            dbCategories.append(self.add_category(categories[category]))
-        return dbCategories
-
-    def add_category(self, categories: dict) -> DbCategory:
+    def add_category(self, category: Category, parent: DbCategory=None) -> DbCategory:
         """Adds a category to the database
 
         Args:
-            name (str): The name of the category
-            subcategories (list[str]): The subcategories of the category
-            
+            category (Category): The category to add
+            parent (DbCategory, optional): The parent category. Defaults to None.
+
         Returns:
             DbCategory: The added category"""
-        category = categories["category"]
-        dbCategory = self.find_category(category.name)
+        dbCategory = self.find_category(category.taxonomy_id)
         if dbCategory is None:
-            dbCategory = DbCategory(name=category.name, taxonomy_id=category.taxonomy_id)
-            self._session.add(dbCategory)
-            self._session.flush()
-        subcategories = categories["subcategories"]
-        for subcategory in subcategories:
-            self.add_category(subcategories[subcategory])
-            dbSubcategory = self.find_category(subcategories[subcategory]["category"].name)
-            dbCategoryHierarchy = DbCategoryHierarchy(
-                parent=dbCategory.id,
-                child=dbSubcategory.id,
+            dbCategory = DbCategory(
+                name=category.name,
+                slug=category.slug,
+                taxonomy_id=category.taxonomy_id,
             )
-            self._session.add(dbCategoryHierarchy)
-            self._session.flush()
-        self._session.commit()
+            self._session.add(dbCategory)
+            self._session.commit()
+
+            if parent is not None:
+                dbCategoryHierarchy = DbCategoryHierarchy(
+                    parent=parent.taxonomy_id,
+                    child=dbCategory.taxonomy_id,
+                )
+                self._session.add(dbCategoryHierarchy)
+                self._session.commit()
+            
+            if category.children is not None:
+                for child in category.children:
+                    self.add_category(child, dbCategory)
+
+            log.info(f"Added category \"{category.name}\" to database")
+        else:
+            log.info(f"Category \"{category.name}\" already exists in database")
         return dbCategory
+    
+
+
+
+
+    # def add_categories(self, categories: dict) -> list[DbCategory]:
+    #     """Adds categories to the database recursively. 
+    #     If a category already exists, it will not be added again.
+
+    #     Args:
+    #         categories (dict): The categories to add
+            
+    #     Returns:
+    #         list[DbCategory]: The added categories"""
+    #     dbCategories = []
+    #     for category in categories:
+    #         dbCategories.append(self.add_category(categories[category]))
+    #     return dbCategories
+
+    # def add_category(self, categories: dict) -> DbCategory:
+    #     """Adds a category to the database
+
+    #     Args:
+    #         name (str): The name of the category
+    #         subcategories (list[str]): The subcategories of the category
+            
+    #     Returns:
+    #         DbCategory: The added category"""
+    #     category = categories["category"]
+    #     dbCategory = self.find_category(category.name)
+    #     if dbCategory is None:
+    #         dbCategory = DbCategory(name=category.name, taxonomy_id=category.taxonomy_id)
+    #         self._session.add(dbCategory)
+    #         self._session.flush()
+    #     subcategories = categories["subcategories"]
+    #     for subcategory in subcategories:
+    #         self.add_category(subcategories[subcategory])
+    #         dbSubcategory = self.find_category(subcategories[subcategory]["category"].name)
+    #         dbCategoryHierarchy = DbCategoryHierarchy(
+    #             parent=dbCategory.id,
+    #             child=dbSubcategory.id,
+    #         )
+    #         self._session.add(dbCategoryHierarchy)
+    #         self._session.flush()
+    #     self._session.commit()
+    #     return dbCategory
         
         
 

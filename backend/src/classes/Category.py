@@ -1,4 +1,15 @@
 class Category():
+    """
+    Category class
+    
+    Attributes:
+        taxonomy_id (str): The id of the category
+        name (str): The name of the category
+        slug (str): The slugified name of the category
+        parent (Category): The parent category
+        children (list): The children categories
+        images (list): The images of the category
+    """
     def __init__(self, taxonomy_id: str=None, name: str=None, slug: str=None, parent: str=None, images: list=None):
         self.taxonomy_id = taxonomy_id
         self.name = name
