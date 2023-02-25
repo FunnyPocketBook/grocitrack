@@ -63,20 +63,9 @@ class Product:
             self.product_not_found = True
         
         product_details = self.connector.get_product_details(row["webshopId"])
-        # TODO: Get the categories of the product. This is a bit tricky because the API doesn't return all the categories of the product. It only returns the immediate category of the product. So we need to do the following and then match the product category to the category in the list:
-        # 1. Get all the categories that exist with https://api.ah.nl/mobile-services/v1/product-shelves/categories
-        # 2. This returns a list of categories
-        # 3. Loop through the list of categories and use the ID to get the subcategories using the endpoint https://api.ah.nl/mobile-services/v1/product-shelves/categories/{id}/sub-categories. 
-        # This returns the category itself and a list of children.
-        # 4. Recursively do this until there are no more children.
-        # category_details = self.connector.get_product_category_details(product_details)
         self.name = row["title"]
         self.product_id = str(row["webshopId"])
         self.category = product_details["productCard"]["subCategoryId"]
-        # categories = self._get_categories(category_details, row["webshopId"], row["subCategory"])
-        # self.categories = []
-        # for category in categories:
-        #     self.categories.append(Category(name=category["name"], taxonomy_id=category["id"]))
 
 
     def _get_categories(self, category_details: dict, product_id: int, taxonomy: str) -> list[dict]:
@@ -120,4 +109,7 @@ class Product:
 
 
     def __repr__(self):
-        return f"Product(quantity={self.quantity}, unit={self.unit}, name={self.name}, price={self.price}, total_price={self.total_price}, indicator={self.indicator})"
+        return f"Product(name={self.name}, product_id={self.product_id}, category={self.category}, price={self.price}, total_price={self.total_price}, indicator={self.indicator})"
+    
+    def __str__(self) -> str:
+        return self.__repr__()

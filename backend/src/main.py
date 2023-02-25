@@ -51,31 +51,26 @@ def get_categories(categories: list, parent: Category=None, result: list=[]):
 def main():
     db_handler = DbHandler()
 
-    # get all categories from the database. If there are none, add them.
-    
-    # TODO: Get the categories of the product. This is a bit tricky because the API doesn't return all the categories of the product. It only returns the immediate category of the product. So we need to do the following and then match the product category to the category in the list:
-    # 1. Get all the categories that exist with https://api.ah.nl/mobile-services/v1/product-shelves/categories
-    # 2. This returns a list of categories
-    # 3. Loop through the list of categories and use the ID to get the subcategories using the endpoint https://api.ah.nl/mobile-services/v1/product-shelves/categories/{id}/sub-categories. 
-    # This returns the category itself and a list of children.
-    # 4. Recursively do this until there are no more children.
-
     categories = db_handler.get_categories()
     if not categories:
-        # check if pickle file exists. If it does, load it. If not, get the categories from the API
-        if os.path.exists("categories.pickle"):
-            with open("categories.pickle", "rb") as f:
-                categories = pickle.load(f)
+        if os.path.exists("backend/src/database/categories.sql"):
+            log.info("Creating categories table from SQL file")
+            db_handler.execute_sql_file("backend/src/database/categories.sql")
+            db_handler.execute_sql_file("backend/src/database/categories_hierarchy.sql")
         else:
-            connector = AHConnector()
-            categories = connector.get_categories()
-            result = []
-            categories = get_categories(categories, result=result)
-            print(result)
-        for category in categories:
-            db_handler.add_category(category)
+            if os.path.exists("categories.pickle"):
+                with open("categories.pickle", "rb") as f:
+                    categories = pickle.load(f)
+            else:
+                connector = AHConnector()
+                categories = connector.get_categories()
+                result = []
+                categories = get_categories(categories, result=result)
+                print(result)
+            for category in categories:
+                db_handler.add_category(category)
 
-    receipts = [Receipt(receipt) for receipt in fetch_receipts()[-4:] if db_handler.find_receipt(receipt["transactionId"]) is None]
+    receipts = [Receipt(receipt) for receipt in fetch_receipts() if db_handler.find_receipt(receipt["transactionId"]) is None]
 
     new_receipts_count = 0
     for receipt in receipts:

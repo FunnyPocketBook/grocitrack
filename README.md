@@ -28,7 +28,7 @@ Basically, what works now already is that all receipts and the groceries from th
   - [ ] Product categories
 
 ### Todo
-- [ ] Add product categories
+- [x] Add product categories
 - [ ] Proper logging
 - [ ] Discount not bound to any products
 - [ ] Frontend in Vue.js

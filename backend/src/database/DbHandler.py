@@ -5,6 +5,7 @@ from classes.Product import Product
 from classes.Discount import Discount
 from classes.Category import Category
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import text
 import pickle
 import logging
 
@@ -37,6 +38,19 @@ class DbHandler:
     def __init__(self):
         self._session = sessionmaker(bind=engine)()
         self._engine = engine
+
+    
+    def execute_sql_file(self, file_path: str):
+        """Executes a SQL file
+        
+        Args:
+            file_path (str): The path to the SQL file"""
+        with open(file_path, "r") as file:
+            script = file.read()
+        statements = script.split(";")
+        for statement in statements:
+            if statement.strip():
+                self._engine.execute(text(statement))
 
 
     def find_receipt(self, transaction_id: str) -> DbReceipt:
@@ -91,7 +105,19 @@ class DbHandler:
         return self._session.query(DbCategory).all()
     
 
-    def get_category_hierarchy(self, taxonomy_id: str, result: list[DbCategory]) -> list[DbCategory]:
+    def get_category_product(self, product_id: str, taxonomy_id: str) -> list[DbCategoryProduct]:
+        """Gets all category products from the database
+
+        Args:
+            product_id (str): The ID of the product
+            taxonomy_id (str): The taxonomy ID of the category
+
+        Returns:
+            list[DbCategoryProduct]: The list of category products"""
+        return self._session.query(DbCategoryProduct).filter_by(product_id=product_id, taxonomy_id=taxonomy_id).all()
+    
+
+    def get_category_hierarchy_parents(self, taxonomy_id: str, result: list[DbCategory]) -> list[DbCategory]:
         """Gets all parent categories based on taxonomy_id from the database
 
         Args:
@@ -107,7 +133,7 @@ class DbHandler:
         result.append(dbCategory)
         dbCategoryHierarchies = self._session.query(DbCategoryHierarchy).filter_by(child=taxonomy_id).all()
         for dbCategoryHierarchy in dbCategoryHierarchies:
-            self.get_category_hierarchy(dbCategoryHierarchy.parent, result)
+            self.get_category_hierarchy_parents(dbCategoryHierarchy.parent, result)
         return result
         
 
@@ -138,9 +164,11 @@ class DbHandler:
         if product.category is None:
             log.error(f"Product \"{product.name}\" has no categories")
             return None
-        # Get all parent categories based on the taxonomy ID from product.category
-        dbCategories = self.get_category_hierarchy(product.category, [])
+        dbCategories = self.get_category_hierarchy_parents(product.category, [])
         for dbCategory in dbCategories:
+            dbCategoryProduct = self.get_category_product(dbProduct.product_id, dbCategory.taxonomy_id)
+            if dbCategoryProduct:
+                continue
             dbCategoryProduct = DbCategoryProduct(
                 product_id=dbProduct.product_id,
                 taxonomy_id=dbCategory.taxonomy_id,
@@ -214,7 +242,7 @@ class DbHandler:
             self._session.add(dbCategory)
             self._session.commit()
 
-            if parent is not None:
+            if parent is not None:               
                 dbCategoryHierarchy = DbCategoryHierarchy(
                     parent=parent.taxonomy_id,
                     child=dbCategory.taxonomy_id,
