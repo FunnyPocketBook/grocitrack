@@ -31,9 +31,9 @@ class Product:
 
     def _set_details(self):
         """Fetches and sets the details of the product."""
-        if "statiegeld" in self.description.lower():
+        if "statiegeld" in self.description.lower() or "airmiles" in self.description.lower():
             return
-        result = self.connector.search_products(query=self.description, size=200, page=0)
+        result = self.connector.search_products(query=self.description, size=15, page=0)
         if result["products"] == []:
             # TODO: Use NLP to split the description into words and search for each word separately.
             self.product_not_found = True
@@ -69,13 +69,13 @@ class Product:
         # 3. Loop through the list of categories and use the ID to get the subcategories using the endpoint https://api.ah.nl/mobile-services/v1/product-shelves/categories/{id}/sub-categories. 
         # This returns the category itself and a list of children.
         # 4. Recursively do this until there are no more children.
-        category_details = self.connector.get_product_category_details(product_details)
+        # category_details = self.connector.get_product_category_details(product_details)
         self.name = row["title"]
         self.product_id = str(row["webshopId"])
-        categories = self._get_categories(category_details, row["webshopId"], row["subCategory"])
-        self.categories = []
-        for category in categories:
-            self.categories.append(Category(name=category["name"], taxonomy_id=category["id"]))
+        # categories = self._get_categories(category_details, row["webshopId"], row["subCategory"])
+        # self.categories = []
+        # for category in categories:
+        #     self.categories.append(Category(name=category["name"], taxonomy_id=category["id"]))
 
 
     def _get_categories(self, category_details: dict, product_id: int, taxonomy: str) -> list[dict]:

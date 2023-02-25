@@ -80,6 +80,14 @@ class DbHandler:
         Returns:
             DbCategory: The category with the given name"""
         return self._session.query(DbCategory).filter_by(name=name).first()
+    
+
+    def get_categories(self) -> list[DbCategory]:
+        """Gets all categories from the database
+
+        Returns:
+            list[DbCategory]: The list of categories"""
+        return self._session.query(DbCategory).all()
 
     
     def set_categories_for_products(self, products: list[Product]) -> list[DbCategoryProduct]:
