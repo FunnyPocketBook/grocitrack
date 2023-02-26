@@ -32,6 +32,7 @@ Basically, what works now already is that all receipts and the groceries from th
 - [ ] Proper logging
 - [ ] Discount not bound to any products
 - [ ] Frontend in Vue.js
+- [ ] Show average percentage saved (per category and total)
 
 ### ER Diagram
 Not quite up to date but close enough.

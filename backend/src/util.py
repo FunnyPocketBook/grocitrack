@@ -29,4 +29,5 @@ def translate(text: str, source_language: str="NL", target_language: str="EN-US"
     Returns:
         str: The translated text.
     """
-    return deepl.translate_text(text, source_language, target_language).text
+    translated_text = translator.translate_text(text, source_lang=source_language, target_lang=target_language).text
+    return translated_text

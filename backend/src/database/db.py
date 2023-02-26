@@ -111,12 +111,14 @@ class DbCategory(Base):
         id (int): Category id
         name (str): Category name
         slug (str): Category slug
+        english (str): Category english name
         taxonomy_id (str): Category taxonomy id
     """
     __tablename__ = "categories"
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False, unique=True)
     slug = Column(String(255), nullable=False, unique=True)
+    english = Column(String(255), nullable=False, unique=False)
     taxonomy_id = Column(String(255), nullable=False, unique=True)
 
 
