@@ -48,27 +48,29 @@ def get_categories(categories: list, parent: Category=None, result: list=[]):
     return result
 
 
+def add_categories(db_handler: DbHandler):
+    if os.path.exists("backend/src/database/categories.sql"):
+        log.info("Creating categories table from SQL file")
+        db_handler.execute_sql_file("backend/src/database/categories.sql")
+        db_handler.execute_sql_file("backend/src/database/categories_hierarchy.sql")
+    else:
+        if os.path.exists("categories.pickle"):
+            with open("categories.pickle", "rb") as f:
+                categories = pickle.load(f)
+        else:
+            connector = AHConnector()
+            categories = connector.get_categories()
+            result = []
+            categories = get_categories(categories, result=result)
+            print(result)
+        for category in categories:
+            db_handler.add_category(category)
+
+
 def main():
     db_handler = DbHandler()
-
-    categories = db_handler.get_categories()
-    if not categories:
-        if os.path.exists("backend/src/database/categories.sql"):
-            log.info("Creating categories table from SQL file")
-            db_handler.execute_sql_file("backend/src/database/categories.sql")
-            db_handler.execute_sql_file("backend/src/database/categories_hierarchy.sql")
-        else:
-            if os.path.exists("categories.pickle"):
-                with open("categories.pickle", "rb") as f:
-                    categories = pickle.load(f)
-            else:
-                connector = AHConnector()
-                categories = connector.get_categories()
-                result = []
-                categories = get_categories(categories, result=result)
-                print(result)
-            for category in categories:
-                db_handler.add_category(category)
+    if not db_handler.get_categories():
+        add_categories(db_handler)
 
     receipts = [Receipt(receipt) for receipt in fetch_receipts() if db_handler.find_receipt(receipt["transactionId"]) is None]
 
