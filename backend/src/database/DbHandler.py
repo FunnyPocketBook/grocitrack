@@ -97,6 +97,22 @@ class DbHandler:
         return self._session.query(DbCategory).filter_by(taxonomy_id=taxonomy_id).first()
     
 
+    def get_receipts(self) -> list[DbReceipt]:
+        """Gets all receipts from the database
+        
+        Returns:
+            list[DbReceipt]: The list of receipts"""
+        return self._session.query(DbReceipt).all()
+    
+
+    def get_products(self) -> list[DbProduct]:
+        """Gets all products from the database
+        
+        Returns:
+            list[DbProduct]: The list of products"""
+        return self._session.query(DbProduct).all()
+        
+
     def get_categories(self) -> list[DbCategory]:
         """Gets all categories from the database
 

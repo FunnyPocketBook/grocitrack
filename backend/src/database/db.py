@@ -55,6 +55,16 @@ class DbReceipt(Base):
     total_discount = Column(Float)
     pickle = Column(LargeBinary)
 
+    def toJSON(self):
+        return {
+            "id": self.id,
+            "transaction_id": self.transaction_id,
+            "datetime": self.datetime,
+            "location": self.location,
+            "total_price": self.total_price,
+            "total_discount": self.total_discount
+        }
+
 
 class DbProduct(Base):
     """Product model
