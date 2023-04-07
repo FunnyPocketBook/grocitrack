@@ -21,11 +21,19 @@ class Receipt:
     def __init__(self, receipt):
         self.transaction_id = receipt["transactionId"]
         self.datetime = datetime.strptime(receipt["transactionMoment"], "%Y-%m-%dT%H:%M:%SZ")
-        self.receipt_details = self._get_receipt_details()
-        self.location = self._get_location(receipt["storeAddress"])
+        self.receipt_details = None
+        self.location = None
         self.total = receipt["total"]["amount"]["amount"]
+        self.products = []
+        self.discounts = []
+        self._receipt = receipt
+
+    
+    def set_details(self):
+        self.receipt_details = self._get_receipt_details()
         self.products = self._get_products()
         self.discounts = self._get_discounts()
+        self.location = self._get_location(self._receipt["storeAddress"])
 
 
     def _get_receipt_details(self) -> list:

@@ -45,10 +45,13 @@ class Product:
             df["unitPriceDescription"] = None
         if self.unit and self.unit.lower() == "kg":
             filtered_rows = df[df["unitPriceDescription"] == self.price]
-        elif self.quantity == 1:
-            filtered_rows = df[df["priceBeforeBonus"] == self.total_price]
+        elif "priceBeforeBonus" in df.columns:
+            if self.quantity == 1:
+                filtered_rows = df[df["priceBeforeBonus"] == self.total_price]
+            else:
+                filtered_rows = df[df["priceBeforeBonus"] == self.price]
         else:
-            filtered_rows = df[df["priceBeforeBonus"] == self.price]
+            filtered_rows = df[df["currentPrice"] == self.price]
         
         length = filtered_rows.shape[0]
         if length == 0:

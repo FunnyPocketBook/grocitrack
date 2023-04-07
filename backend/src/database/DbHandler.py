@@ -104,6 +104,16 @@ class DbHandler:
             list[DbReceipt]: The list of receipts"""
         return self._session.query(DbReceipt).all()
     
+    def get_receipt(self, receipt_id: int) -> DbReceipt:
+        """Gets a receipt from the database
+        
+        Args:
+            receipt_id (int): The ID of the receipt
+        
+        Returns:
+            DbReceipt: The receipt with the given ID"""
+        return self._session.query(DbReceipt).get(receipt_id)
+    
 
     def get_products(self) -> list[DbProduct]:
         """Gets all products from the database
@@ -164,7 +174,9 @@ class DbHandler:
             list[DbCategoryProduct]: The list of added category products"""
         categoryProducts = []
         for product in products:
-            categoryProducts.append(self.set_categories_for_product(product))
+            dbCategoryProducts = self.set_categories_for_product(product)
+            if dbCategoryProducts is not None:
+                categoryProducts.append(dbCategoryProducts)
         return categoryProducts
 
 
@@ -181,6 +193,9 @@ class DbHandler:
             log.error(f"Product \"{product.name}\" has no categories")
             return None
         dbCategories = self.get_category_hierarchy_parents(product.category, [])
+        if dbCategories is None:
+            log.error(f"Product \"{product.name}\" has no categories")
+            return None
         for dbCategory in dbCategories:
             dbCategoryProduct = self.get_category_product(dbProduct.product_id, dbCategory.taxonomy_id)
             if dbCategoryProduct:

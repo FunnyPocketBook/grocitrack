@@ -49,10 +49,10 @@ def get_categories(categories: list, parent: Category=None, result: list=[]):
 
 
 def add_categories(db_handler: DbHandler):
-    if os.path.exists("backend/src/database/categories.sql"):
+    if os.path.exists("src/database/categories.sql"):
         log.info("Creating categories table from SQL file")
-        db_handler.execute_sql_file("backend/src/database/categories.sql")
-        db_handler.execute_sql_file("backend/src/database/categories_hierarchy.sql")
+        db_handler.execute_sql_file("src/database/categories.sql")
+        db_handler.execute_sql_file("src/database/categories_hierarchy.sql")
     else:
         if os.path.exists("categories.pickle"):
             with open("categories.pickle", "rb") as f:
@@ -72,10 +72,13 @@ def main():
     if not db_handler.get_categories():
         add_categories(db_handler)
 
-    receipts = [Receipt(receipt) for receipt in fetch_receipts() if db_handler.find_receipt(receipt["transactionId"]) is None]
+    receipts_result = fetch_receipts()
+
+    receipts = [Receipt(receipt) for receipt in receipts_result if db_handler.find_receipt(receipt["transactionId"]) is None]
 
     new_receipts_count = 0
     for receipt in receipts:
+        receipt.set_details()
         new_receipts_count += 1
         location = receipt.location
         dbLocation = db_handler.find_location(location.name)
