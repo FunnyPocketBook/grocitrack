@@ -6,7 +6,7 @@ config = Config()
 LOGIN_URL = "https://login.ah.nl/secure/oauth/authorize?client_id=appie&redirect_uri=appie://login-exit&response_type=code"
 TOKEN_URL = "https://api.ah.nl/mobile-auth/v1/auth/token"
 REFRESH_TOKEN_URL = "https://api.ah.nl/mobile-auth/v1/auth/token/refresh"
-RECEIPTS_URL = "https://api.ah.nl/mobile-services/v1/receipts/"
+RECEIPTS_URL = "https://api.ah.nl/mobile-services/v1/receipts"
 
 def login():
     """Uses the code from the config file to fetch the access token and refresh token.

@@ -30,10 +30,20 @@ class Receipt:
 
     
     def set_details(self):
+        """Sets the details of the receipt."""
         self.receipt_details = self._get_receipt_details()
         self.products = self._get_products()
         self.discounts = self._get_discounts()
         self.location = self._get_location(self._receipt["storeAddress"])
+
+    
+    def is_empty(self):
+        """Checks if the receipt is empty."""
+        return (
+            self.total == 0 and
+            len(self.products) == 0 and
+            len(self.discounts) == 0
+        )
 
 
     def _get_receipt_details(self) -> list:
@@ -158,7 +168,7 @@ class Receipt:
             return None
         else:
             quantity, unit = self._parse_quantity(item["quantity"])
-            price = string_to_float(item["price"]) if "price" in item else None
+            price = string_to_float(item["price"]) if "price" in item and item["price"] is not None else None
             if item["indicator"] == "":
                 item["indicator"] = None
             amount = string_to_float(item["amount"])
@@ -194,6 +204,8 @@ class Receipt:
         Returns:
             tuple[float, str]: The quantity and unit.
         """
+        if quantity is None:
+            return None, None
         quantity = quantity.replace(",", ".")
         regex_result = re.match(r'(\d+.\d+)([a-zA-Z]+)', quantity)
         if quantity.isnumeric():

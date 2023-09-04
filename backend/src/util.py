@@ -15,6 +15,8 @@ def string_to_float(string: str) -> float:
     Returns:
         float: The number as a float.
     """
+    if string is None:
+        return None
     return float(string.replace(",", "."))
 
 

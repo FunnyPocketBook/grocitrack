@@ -76,10 +76,10 @@ def main():
 
     receipts = [Receipt(receipt) for receipt in receipts_result if db_handler.find_receipt(receipt["transactionId"]) is None]
 
-    new_receipts_count = 0
     for receipt in receipts:
+        if receipt.is_empty():
+            continue
         receipt.set_details()
-        new_receipts_count += 1
         location = receipt.location
         dbLocation = db_handler.find_location(location.name)
         if not dbLocation:
@@ -90,7 +90,7 @@ def main():
         db_handler.set_categories_for_products(receipt.products)
 
     db_handler.close()
-    log.info(f"Added {new_receipts_count} new receipts to the database.")
+    log.info(f"Added {len(receipts)} new receipts to the database.")
 
 if __name__ == "__main__":
     main()
