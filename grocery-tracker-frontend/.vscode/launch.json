@@ -14,7 +14,7 @@
       ],
       "type": "node",
       "serverReadyAction": {
-        "action": "debugWithChrome",
+        "action": "debugWithEdge",
         "pattern": "localhost:.*m([0-9]+)",
         "uriFormat": "http://localhost:%s",
         "webRoot": "${workspaceFolder}"
