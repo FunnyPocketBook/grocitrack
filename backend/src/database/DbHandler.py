@@ -206,7 +206,7 @@ class DbHandler:
             )
             self._session.add(dbCategoryProduct)
             self._session.flush()
-            log.info(f"Added category \"{dbCategory.name}\" to product \"{product.name}\"")
+            log.debug(f"Added category \"{dbCategory.name}\" to product \"{product.name}\"")
         self._session.commit()
         return dbCategories
 
@@ -362,7 +362,7 @@ class DbHandler:
         )
         self._session.add(dbProduct)
         self._session.commit()
-        log.info(f"Added product \"{product.name}\" to database")
+        log.debug(f"Added product \"{product.name}\" to database")
         return dbProduct
 
 

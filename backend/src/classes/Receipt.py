@@ -86,6 +86,8 @@ class Receipt:
         # Remove all elements before "bonuskaart" (and that element itself) and after "subtotaal" to get only the products that have been purchased (without discounts etc.)
         before_index = next((index for (index, d) in enumerate(receipt_rows) if d["type"].lower() == "product" and d["description"].lower() == "bonuskaart"), None)
         after_index = next((index for (index, d) in enumerate(receipt_rows) if d["type"].lower() == "subtotal" and d["text"].lower() == "subtotaal"), None)
+        if before_index is None:
+            return []
         product_rows = receipt_rows[before_index + 1:after_index]
 
         # remove all entires don't have the type "product"
