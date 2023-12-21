@@ -397,7 +397,7 @@ class DbHandler:
         )
         self._session.add(dbDiscount)
         self._session.commit()
-        log.info(f"Added discount \"{discount.description}\" to database")
+        log.debug(f"Added discount \"{discount.description}\" to database")
         return dbDiscount
 
     

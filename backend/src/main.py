@@ -1,5 +1,5 @@
 from database.DbHandler import DbHandler
-from ah_api import fetch_receipts
+from ah_api import fetch_receipts, get_previously_bought
 from config import Config
 from classes.Receipt import Receipt
 from supermarktconnector.ah import AHConnector
@@ -73,9 +73,9 @@ def main():
         add_categories(db_handler)
 
     receipts_result = fetch_receipts()
+    prev_bought = get_previously_bought()
 
     receipts = [Receipt(receipt) for receipt in receipts_result if db_handler.find_receipt(receipt["transactionId"]) is None]
-
     for receipt in receipts:
         if receipt.is_empty():
             continue
