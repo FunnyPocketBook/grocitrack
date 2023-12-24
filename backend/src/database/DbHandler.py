@@ -6,7 +6,6 @@ from classes.Discount import Discount
 from classes.Category import Category
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
-import pickle
 import logging
 
 log = logging.getLogger(__name__)
@@ -35,9 +34,9 @@ class DbHandler:
         add_discounts(discounts: list[Discount], receipt_id: int)
 
         close()"""
-    def __init__(self):
-        self._session = sessionmaker(bind=engine)()
-        self._engine = engine
+    def __init__(self, _engine=engine):
+        self._engine = _engine
+        self._session = sessionmaker(bind=self._engine)()
 
     
     def execute_sql_file(self, file_path: str):
@@ -72,7 +71,10 @@ class DbHandler:
 
         Returns:
             DbProduct: The found product"""
-        return self._session.query(DbProduct).filter_by(name=product.name).first()
+        try:
+            return self._session.query(DbProduct).filter_by(name=product.name).first()
+        except Exception as e:
+            return None
 
 
     def find_location(self, name: str) -> DbLocation:
@@ -83,7 +85,10 @@ class DbHandler:
         
         Returns:
             DbLocation: The location with the given name"""
-        return self._session.query(DbLocation).filter_by(name=name).first()
+        try:
+            return self._session.query(DbLocation).filter_by(name=name).first()
+        except Exception as e:
+            return None
 
 
     def find_category(self, taxonomy_id: str) -> DbCategory:
@@ -94,7 +99,10 @@ class DbHandler:
 
         Returns:
             DbCategory: The category with the given name"""
-        return self._session.query(DbCategory).filter_by(taxonomy_id=taxonomy_id).first()
+        try:
+            return self._session.query(DbCategory).filter_by(taxonomy_id=taxonomy_id).first()
+        except Exception as e:
+            return None
     
 
     def get_receipts(self) -> list[DbReceipt]:
@@ -130,6 +138,35 @@ class DbHandler:
             list[DbCategory]: The list of categories"""
         return self._session.query(DbCategory).all()
     
+    def get_categories_hierarchy(self) -> list[DbCategoryHierarchy]:
+        """Gets all category hierarchies from the database
+
+        Returns:
+            list[DbCategoryHierarchy]: The list of category hierarchies"""
+        return self._session.query(DbCategoryHierarchy).all()
+    
+    def get_categories_products(self) -> list[DbCategoryProduct]:
+        """Gets all category products from the database
+
+        Returns:
+            list[DbCategoryProduct]: The list of category products"""
+        return self._session.query(DbCategoryProduct).all()
+    
+
+    def get_discounts(self) -> list[DbDiscount]:
+        """Gets all discounts from the database
+
+        Returns:
+            list[DbDiscount]: The list of discounts"""
+        return self._session.query(DbDiscount).all()
+    
+    def get_locations(self) -> list[DbLocation]:
+        """Gets all locations from the database
+
+        Returns:
+            list[DbLocation]: The list of locations"""
+        return self._session.query(DbLocation).all()
+    
 
     def get_category_product(self, product_id: str, taxonomy_id: str) -> list[DbCategoryProduct]:
         """Gets all category products from the database
@@ -155,6 +192,7 @@ class DbHandler:
         dbCategory = self.find_category(taxonomy_id)
         if dbCategory is None:
             log.error(f"Category \"{taxonomy_id}\" not found")
+            # TODO: get new category from API and insert into DB
             return None
         result.append(dbCategory)
         dbCategoryHierarchies = self._session.query(DbCategoryHierarchy).filter_by(child=taxonomy_id).all()
@@ -246,7 +284,6 @@ class DbHandler:
             location=location_id,
             total_price=receipt.total,
             total_discount=receipt.discounts["total_discount"],
-            pickle=pickle.dumps(receipt),
         )
         self._session.add(dbReceipt)
         self._session.commit()
@@ -414,6 +451,94 @@ class DbHandler:
         for discount in discounts:
             DbDiscounts.append(self.add_discount(discount, receipt_id))
         return DbDiscounts
+    
+    def add_all_categories(self, categories: list):
+        for category in categories:
+            dbCategory = DbCategory(
+                id=category.id,
+                name=category.name,
+                slug=category.slug,
+                taxonomy_id=category.taxonomy_id,
+                english=category.english
+            )
+            self._session.add(dbCategory)
+        self._session.commit()
+
+    def add_all_locations(self, locations: list):
+        for location in locations:
+            dbLocation = DbLocation(
+                id=location.id,
+                name=location.name,
+                address=location.address,
+                house_number=location.house_number,
+                city=location.city,
+                postal_code=location.postal_code,
+            )
+            self._session.add(dbLocation)
+        self._session.commit()
+
+    def add_all_products(self, products: list):
+        for product in products:
+            dbProduct = DbProduct(
+                id=product.id,
+                product_id=product.product_id,
+                description=product.description,
+                name=product.name,
+                quantity=product.quantity,
+                receipt=product.receipt,
+                unit=product.unit,
+                price=product.price,
+                total_price=product.total_price,
+                potential_products=product.potential_products,
+                product_not_found=product.product_not_found,
+            )
+            self._session.add(dbProduct)
+            self._session.commit()
+
+    def add_all_discounts(self, discounts: list):
+        for discount in discounts:
+            dbDiscount = DbDiscount(
+                id=discount.id,
+                receipt=discount.receipt,
+                type=discount.type,
+                description=discount.description,
+                amount=discount.amount,
+            )
+            self._session.add(dbDiscount)
+        self._session.commit()
+
+    def add_all_receipts(self, receipts: list):
+        for receipt in receipts:
+            dbReceipt = DbReceipt(
+                id=receipt.id,
+                transaction_id=receipt.transaction_id,
+                datetime=receipt.datetime,
+                total_price=receipt.total_price,
+                total_discount=receipt.total_discount,
+                location=receipt.location
+            )
+            self._session.add(dbReceipt)
+        self._session.commit()
+
+    def add_all_categories_hierarchy(self, categories_hierarchy: list):
+        for category_hierarchy in categories_hierarchy:
+            dbCategoryHierarchy = DbCategoryHierarchy(
+                id=category_hierarchy.id,
+                parent=category_hierarchy.parent,
+                child=category_hierarchy.child
+            )
+            self._session.add(dbCategoryHierarchy)
+        self._session.commit()
+
+    def add_all_categories_products(self, categories_products: list):
+        for category_product in categories_products:
+            dbCategoryProduct = DbCategoryProduct(
+                id=category_product.id,
+                product_id=category_product.product_id,
+                taxonomy_id=category_product.taxonomy_id
+            )
+            self._session.add(dbCategoryProduct)
+        self._session.commit()
 
     def close(self):
         """Closes the session"""

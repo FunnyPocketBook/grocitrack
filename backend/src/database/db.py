@@ -7,28 +7,18 @@ from sqlalchemy import (
     Float,
     String,
     DateTime,
-    LargeBinary,
     Boolean,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from config import Config
 
 
 config = Config()
 
 
-if config.get("database", "type") == "sqlite":
-    engine = create_engine(f"sqlite:///{config.get('database')['name']}.db")
-elif config.get("database", "type") == "mysql":
-    engine = create_engine(
-        f"mysql+pymysql://{config.get('database')['username']}:{config.get('database')['password']}@{config.get('database')['host']}/{config.get('database')['name']}"
-    )
-elif config.get("database", "type") == "postgresql" or config.get("database", "type") == "postgres":
-    engine = create_engine(
+engine = create_engine(
         f"postgresql://{config.get('database')['username']}:{config.get('database')['password']}@{config.get('database')['host']}/{config.get('database')['name']}"
     )
-else:
-    raise ValueError("Database type not supported.")
-
 
 Base = declarative_base()
 
@@ -43,17 +33,15 @@ class DbReceipt(Base):
         location (int): Location id
         total_price (float): Receipt total price
         total_discount (float): Receipt total discount
-        pickle (bytes): Receipt pickle
     """
     __tablename__ = "receipts" 
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     transaction_id = Column(String(255), nullable=False)
     datetime = Column(DateTime)
     location = Column(Integer, ForeignKey("locations.id"))
     total_price = Column(Float)
     total_discount = Column(Float)
-    pickle = Column(LargeBinary)
 
     def toJSON(self):
         return {
@@ -64,7 +52,7 @@ class DbReceipt(Base):
             "total_price": self.total_price,
             "total_discount": self.total_discount
         }
-
+    
 
 class DbProduct(Base):
     """Product model
@@ -79,11 +67,11 @@ class DbProduct(Base):
         unit (str): Product unit
         price (float): Product price
         total_price (float): Product total price
-        potential_products (bytes): Potential products
+        potential_products (JSON): Potential products
         product_not_found (bool): Product not found
     """
     __tablename__ = "products"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     product_id = Column(String(255))
     description = Column(String(255))
     name = Column(String(255))
@@ -92,9 +80,9 @@ class DbProduct(Base):
     unit = Column(String(255))
     price = Column(Float)
     total_price = Column(Float)
-    potential_products = Column(LargeBinary)
     product_not_found = Column(Boolean)
-    
+    potential_products = Column(JSONB)
+
 
 class DbDiscount(Base):
     """Discount model
@@ -107,7 +95,7 @@ class DbDiscount(Base):
         amount (float): Discount amount
     """
     __tablename__ = "discounts"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     receipt = Column(Integer, ForeignKey("receipts.id"), nullable=False)
     type = Column(String(255))
     description = Column(String(255))
@@ -125,7 +113,7 @@ class DbCategory(Base):
         taxonomy_id (str): Category taxonomy id
     """
     __tablename__ = "categories"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), nullable=False, unique=True)
     slug = Column(String(255), nullable=False, unique=True)
     english = Column(String(255), nullable=False, unique=False)
@@ -144,7 +132,7 @@ class DbLocation(Base):
         postal_code (str): Location postal code
     """
     __tablename__ = "locations"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), nullable=False, unique=True)
     address = Column(String(255))
     house_number = Column(String(255))
@@ -161,9 +149,9 @@ class DbCategoryProduct(Base):
         product_id (str): Product id
     """
     __tablename__ = "categories_products"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     taxonomy_id = Column(String(255), ForeignKey("categories.taxonomy_id"))
-    product_id = Column(String(255), ForeignKey("products.product_id"))
+    product_id = Column(String(255))
 
 
 class DbCategoryHierarchy(Base):
@@ -175,9 +163,9 @@ class DbCategoryHierarchy(Base):
         child (str): Child category taxonomy id
     """
     __tablename__ = "categories_hierarchy"
-    id = Column(Integer, primary_key=True)
-    parent = Column(Integer, ForeignKey("categories.taxonomy_id"))
-    child = Column(Integer, ForeignKey("categories.taxonomy_id"))
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    parent = Column(String(255), ForeignKey("categories.taxonomy_id"))
+    child = Column(String(255), ForeignKey("categories.taxonomy_id"))
 
 
 Base.metadata.create_all(engine)

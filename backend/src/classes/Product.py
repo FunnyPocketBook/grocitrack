@@ -56,13 +56,13 @@ class Product:
         length = filtered_rows.shape[0]
         if length == 0:
             row = df.iloc[0]
-            self.potential_products = pickle.dumps(result["products"])
+            self.potential_products = result["products"]
             self.product_not_found = True
         elif length == 1:
             row = filtered_rows.iloc[0]
         else:
             row = filtered_rows.iloc[0]
-            self.potential_products = pickle.dumps(filtered_rows.to_dict(orient="records"))
+            self.potential_products = filtered_rows.to_dict(orient="records")
             self.product_not_found = True
         
         product_details = self.connector.get_product_details(row["webshopId"])
