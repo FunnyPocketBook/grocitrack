@@ -25,11 +25,16 @@ Basically, what works now already is that all receipts and the groceries from th
 - [x] Database integration (sqlite, mysql, postgresql)
 - [x] Receipt parsing
 - [x] Product parsing
-  - [ ] Product categories
+  - [x] Product categories
 
 ### Todo
 - [x] Add product categories
-- [ ] Proper logging
+- [x] Proper logging
+- [ ] Handle missing category
+  - [ ] If category not found, fetch it, add it to database, continue
+- [ ] Handle product not found
+  - [ ] Split name into tokens and search for each token
+  - [ ] If no results, use LLM (LLama) to find out what the name was meant to be
 - [ ] Discount not bound to any products
 - [ ] Frontend in Vue.js
 - [ ] Show average percentage saved (per category and total)
