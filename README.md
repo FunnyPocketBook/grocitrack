@@ -33,6 +33,7 @@ Basically, what works now already is that all receipts and the groceries from th
 - [ ] Handle missing category
   - [ ] If category not found, fetch it, add it to database, continue
 - [ ] Handle product not found
+  - [ ] Match by "previously bought item"
   - [ ] Split name into tokens and search for each token
   - [ ] If no results, use LLM (LLama) to find out what the name was meant to be
 - [ ] Discount not bound to any products
