@@ -2,8 +2,6 @@ from supermarktconnector.ah import AHConnector
 import pandas as pd
 import re
 from math import isnan
-import pickle
-from classes.Category import Category
 
 
 class Product:

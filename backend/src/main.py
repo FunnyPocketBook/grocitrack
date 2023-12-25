@@ -18,12 +18,13 @@ logging.basicConfig(format="%(asctime)s [%(levelname)s] %(module)s: %(message)s"
     ])
 log = logging.getLogger(__name__)
 config = Config()
+timeout = 3
 
 def get_category(category: dict, parent: Category=None):
     r = random.randint(1, 100)
-    if r > 90:
-        print(f"Sleeping for 10 seconds to avoid rate limit")
-        time.sleep(10)
+    if r > 70:
+        log.info(f"Sleeping for {timeout} seconds to avoid rate limit")
+        time.sleep(timeout)
     connector = AHConnector()
     category = Category(category["id"], category["name"], category["slugifiedName"], images=category["images"])
     if parent:
@@ -31,46 +32,60 @@ def get_category(category: dict, parent: Category=None):
         category.set_parent(parent)
     try:
         children = connector.get_sub_categories(category.taxonomy_id)["children"]
-        print(f"Getting children of {category.name}")
+        # log.info(f"Getting children of {category.name}")
         if children:
             get_categories(children, category)
     except Exception as e:
-        print(f"Error getting subcategories of {category.name}: {e}")
+        log.error(f"Error getting subcategories of {category.name}: {e}")
     return category
 
 
-def get_categories(categories: list, parent: Category=None, result: list=[]):
+def get_categories(categories: list, parent: Category=None):
     result = []
-    with ThreadPoolExecutor(max_workers=2) as executor:
+    with ThreadPoolExecutor(max_workers=4) as executor:
         futures = [executor.submit(get_category, category, parent) for category in categories]
         for future in as_completed(futures):
             result.append(future.result())
     return result
 
+def fetch_new_categories():
+    connector = AHConnector()
+    categories = connector.get_categories()
+    categories = get_categories(categories)
+    pickle.dump(categories, open("categories_new.pickle", "wb"))
+    return categories
 
 def add_categories(db_handler: DbHandler):
-    if os.path.exists("src/database/categories.sql"):
-        log.info("Creating categories table from SQL file")
-        db_handler.execute_sql_file("src/database/categories.sql")
-        db_handler.execute_sql_file("src/database/categories_hierarchy.sql")
-    else:
-        if os.path.exists("categories.pickle"):
-            with open("categories.pickle", "rb") as f:
-                categories = pickle.load(f)
-        else:
-            connector = AHConnector()
-            categories = connector.get_categories()
-            result = []
-            categories = get_categories(categories, result=result)
-            print(result)
-        for category in categories:
-            db_handler.add_category(category)
+    # if os.path.exists("src/database/categories.sql"):
+    #     log.info("Creating categories table from SQL file")
+    #     db_handler.execute_sql_file("src/database/categories.sql")
+    #     db_handler.execute_sql_file("src/database/categories_hierarchy.sql")
+    # else:
+    #     if os.path.exists("categories.pickle"):
+    #         with open("categories.pickle", "rb") as f:
+    #             categories = pickle.load(f)
+    #     else:
+    #         connector = AHConnector()
+    #         categories = connector.get_categories()
+    #         result = []
+    #         categories = get_categories(categories, result=result)
+    #         print(result)
+    #     for category in categories:
+    #         db_handler.add_category(category)
 
+    connector = AHConnector()
+    categories = connector.get_categories()
+    result = []
+    categories = get_categories(categories, result=result)
+    print(result)
+    for category in categories:
+        db_handler.add_category(category)
 
 def main():
     db_handler = DbHandler()
-    if not db_handler.get_categories():
-        add_categories(db_handler)
+    # if not db_handler.get_categories():
+        # add_categories(db_handler)
+    add_categories(db_handler)
 
     receipts_result = fetch_receipts()
     prev_bought = get_previously_bought()
@@ -93,4 +108,5 @@ def main():
     log.info(f"Added {len(receipts)} new receipts to the database.")
 
 if __name__ == "__main__":
-    main()
+    # main()
+    fetch_new_categories()

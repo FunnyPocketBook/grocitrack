@@ -323,6 +323,9 @@ class DbHandler:
                     self.add_category(child, dbCategory)
 
             log.info(f"Added category \"{category.name}\" to database")
+        elif category.children is not None:
+            for child in category.children:
+                self.add_category(child, dbCategory)
         else:
             log.info(f"Category \"{category.name}\" already exists in database")
         return dbCategory
