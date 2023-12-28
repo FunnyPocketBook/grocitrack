@@ -1,6 +1,9 @@
-import re
 import deepl
 from config import Config
+import logging
+
+# change logging level to warning for deepl
+logging.getLogger("deepl").setLevel(logging.WARNING)
 
 config = Config()
 

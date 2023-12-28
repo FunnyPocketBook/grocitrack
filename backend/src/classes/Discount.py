@@ -1,5 +1,10 @@
 class Discount:
-    def __init__(self, type: str=None, description: str=None, amount: float=None):
+    def __init__(
+        self,
+        type: str | None = None,
+        description: str | None = None,
+        amount: float | None = None,
+    ):
         self.type = type
         self.description = description
         self.amount = amount

@@ -1,5 +1,12 @@
 class Location:
-    def __init__(self, name: str=None, address: str=None, house_number: str=None, postal_code: str=None, city: str=None):
+    def __init__(
+        self,
+        name: str = None,
+        address: str = None,
+        house_number: str = None,
+        postal_code: str = None,
+        city: str = None,
+    ):
         self.name = name
         self.address = address
         self.house_number = house_number
