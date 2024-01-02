@@ -8,7 +8,7 @@ from previous_bought import fetch_previous_bought
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(module)s: %(message)s",
-    level=logging.INFO,
+    level=logging.DEBUG,
     handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()],
 )
 log = logging.getLogger(__name__)
@@ -27,9 +27,14 @@ def main():
         for receipt in receipts_result
         if db_handler.find_receipt(receipt["transactionId"]) is None
     ]
+    log.debug(f"Found {len(receipts)} new receipts.")
     for receipt in receipts:
+        log.debug(
+            f"Processing receipt {receipt.transaction_id} from {receipt.datetime}"
+        )
         receipt.set_details()
         if receipt.is_empty():
+            log.debug(f"Receipt {receipt.transaction_id} is empty.")
             dbLocation = db_handler.find_location(receipt.location.name)
             if not dbLocation:
                 dbLocation = db_handler.add_location(receipt.location)

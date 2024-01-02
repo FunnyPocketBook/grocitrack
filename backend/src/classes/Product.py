@@ -33,6 +33,8 @@ class Product:
     def connector(self):
         return type(self)._connector
 
+    # def _match_product(self, products: list[DbAHProducts]):
+
     def _set_details(self):
         """Fetches and sets the details of the product."""
         from database.DbHandler import DbHandler
@@ -47,9 +49,9 @@ class Product:
         result2 = self.connector.search_products(
             query=self.description, size=15, page=0
         )
-        result = db_handler.search_product(name=self.description)
+        result = db_handler.search_product(input=self.description)
         if result["products"] == []:
-            # TODO: Use NLP to split the description into words and search for each word separately.
+            # TODO: create function to match product
             self.product_not_found = True
             return
         df = pd.DataFrame(result["products"], columns=result["products"][0].keys())

@@ -10,6 +10,7 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+import datetime
 
 Base = declarative_base()
 
@@ -95,6 +96,7 @@ class DbAHProducts(Base):
         multiple_item_promotion (bool): Product multiple item promotion
         stickers (JSON): Product stickers
         order_availability_description (str): Product order availability description
+        date_added (datetime): Product date added
     """
 
     __tablename__ = "ah_products"
@@ -143,6 +145,7 @@ class DbAHProducts(Base):
     multiple_item_promotion = Column(Boolean)
     stickers = Column(JSONB)
     order_availability_description = Column(String(255))
+    date_added = Column(DateTime, default=datetime.datetime.utcnow)
 
 
 class DbPreviousProducts(Base):

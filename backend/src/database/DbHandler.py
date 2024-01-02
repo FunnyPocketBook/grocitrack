@@ -16,12 +16,11 @@ from classes.Receipt import Receipt
 from classes.Location import Location
 from classes.Discount import Discount
 from classes.Category import Category
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import text
+from sqlalchemy.orm import sessionmaker, aliased
 
 import logging
 
-from sqlalchemy import func, text
+from sqlalchemy import func, text, select
 
 log = logging.getLogger(__name__)
 
@@ -50,6 +49,13 @@ class DbHandler:
         add_discounts(discounts: list[Discount], receipt_id: int)
 
         close()"""
+
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(DbHandler, cls).__new__(cls, *args, **kwargs)
+        return cls._instance
 
     def __init__(self, _engine=engine):
         self._engine = _engine
@@ -225,22 +231,62 @@ class DbHandler:
             .all()
         )
 
-    def search_product(self, name: str, limit: float = 0.2) -> list[DbAHProducts]:
-        """Searches for a product in the database
+    def search_product(
+        self, input: str, threshold: float = 0.2, top_n_scores: int = 5
+    ) -> list[DbAHProducts]:
+        """Searches for a product in the database. The search is based on the similarity of the product name and the category name.
 
         Args:
-            name (str): The name of the product
+            input (str): The input to search for
+            threshold (float, optional): The similarity threshold. Defaults to 0.2.
+            top_n_scores (int, optional): The number of top scores to return. Defaults to 5.
 
         Returns:
-            list[DbAHProducts]: The list of products"""
-        # Set the similarity limit (equivalent to SELECT set_limit(0.2);)
-        self._session.execute(f"SELECT set_limit({limit});")
-
-        # Perform the similarity search
-        query = self._session.query(DbAHProducts).filter(
-            DbAHProducts.title.op("%")(func.lower(name))
+            list[DbAHProducts]: The list of products
+        """
+        max_score = func.greatest(
+            func.similarity(DbAHProducts.title, func.lower(input)),
+            func.similarity(DbAHProducts.sub_category, func.lower(input)),
         )
-        return query.all()
+        # ScoredProducts Subquery
+        scored_products_subq = (
+            select(
+                [
+                    DbAHProducts.id,
+                    max_score.label("max_score"),
+                ]
+            )
+            .where(
+                max_score > threshold,
+            )
+            .alias("scored_products")
+        )
+
+        top_n_scores_subq = (
+            select([scored_products_subq.c.max_score])
+            .group_by(scored_products_subq.c.max_score)
+            .order_by(scored_products_subq.c.max_score.desc())
+            .limit(top_n_scores)
+            .alias("top_n_scores")
+        )
+
+        min_score_subq = select(
+            [func.min(top_n_scores_subq.c.max_score).label("min_top_score")]
+        ).alias("min_score")
+
+        ScoredProducts = aliased(DbAHProducts, scored_products_subq)
+
+        result_query = (
+            self._session.query(scored_products_subq.c.max_score, DbAHProducts)
+            .join(ScoredProducts, DbAHProducts.id == ScoredProducts.id)
+            .filter(
+                scored_products_subq.c.max_score
+                >= select([min_score_subq.c.min_top_score]).scalar_subquery()
+            )
+            .order_by(scored_products_subq.c.max_score.desc())
+        )
+        result = result_query.all()
+        return result
 
     def get_category_hierarchy_parents(
         self, taxonomy_id: str, result: list[DbCategory]
