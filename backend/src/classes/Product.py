@@ -6,6 +6,13 @@ from datetime import datetime
 from database.model import DbAHProducts, DbPreviousProducts
 
 
+class MatchedProduct:
+    def __init__(self, title, webshop_id, sub_category):
+        self.title = title
+        self.webshop_id = webshop_id
+        self.sub_category = sub_category
+
+
 class Product:
     _connector = AHConnector()
 
@@ -38,45 +45,89 @@ class Product:
         return type(self)._connector
 
     def _match_product(
-        self, products: list[(float, DbAHProducts)]
+        self,
+        products: list[tuple[float, DbAHProducts | DbPreviousProducts]] | list[dict],
+        model: str = None,
     ) -> (DbAHProducts, bool):
         """Matches the product with the products in the database.
 
         Args:
-            products (list[DbAHProducts]): The products to match.
+            products (list[tuple(float, DbAHProducts|DbPreviousProducts)] | list[dict]): The products to match. If the products are from the database, they are tuples of the similarity score and the product. If the products are from the AH API, they are dictionaries.
+            model (str): The model to match with.
 
         Returns:
             DbAHProducts: The matched product.
             bool: Whether the product is matched.
 
         """
-        for similarity, product in products:
-            if self.quantity == 1:
-                if (
-                    product.price_before_bonus == self.total_price
-                    or product.current_price == self.total_price
-                ):
-                    return product, True
-            else:
-                if self.unit and self.unit.lower() == "kg":
-                    unit_price = self._clean_unit_price_description(
-                        product.unit_price_description
-                    )
-                    if unit_price == self.price:
-                        return product, True
+        if model == "api":  # If the results came from searching the AH API
+            for product in products:
+                if self.quantity == 1:
+                    if product["priceBeforeBonus"] == self.total_price or (
+                        "currentPrice" in product
+                        and product["currentPrice"] == self.total_price
+                    ):
+                        return MatchedProduct(
+                            product["title"],
+                            product["webshopId"],
+                            product["subCategory"],
+                        ), True
                 else:
+                    if self.unit and self.unit.lower() == "kg":
+                        unit_price = self._clean_unit_price_description(
+                            product["unitPriceDescription"]
+                        )
+                        if unit_price == self.price:
+                            return MatchedProduct(
+                                product["title"],
+                                product["webshopId"],
+                                product["subCategory"],
+                            ), True
+                    else:
+                        if (
+                            product["currentPrice"] == self.price
+                            or product["priceBeforeBonus"] == self.price
+                        ):
+                            return MatchedProduct(
+                                product["title"],
+                                product["webshopId"],
+                                product["subCategory"],
+                            ), True
+            return MatchedProduct(
+                products[0]["title"],
+                products[0]["webshopId"],
+                products[0]["subCategory"],
+            ), False
+        else:  # If the results came from searching the database
+            for similarity, product in products:
+                if self.quantity == 1:
                     if (
-                        product.current_price == self.price
-                        or product.price_before_bonus == self.price
+                        product.price_before_bonus == self.total_price
+                        or product.current_price == self.total_price
                     ):
                         return product, True
-        return products[0][1], False
+                else:
+                    if self.unit and self.unit.lower() == "kg":
+                        unit_price = self._clean_unit_price_description(
+                            product.unit_price_description
+                        )
+                        if unit_price == self.price:
+                            return product, True
+                    else:
+                        if (
+                            product.current_price == self.price
+                            or product.price_before_bonus == self.price
+                        ):
+                            return product, True
+            return products[0][1], False
 
     def _set_details(self):
         """Fetches and sets the details of the product."""
         from database.DbHandler import DbHandler
 
         db_handler = DbHandler()
+        # TODO: Make constants instead of magic strings
+        model = "previous"
 
         if not self.quantity:
             return
@@ -87,12 +138,39 @@ class Product:
             products = db_handler.search_product(
                 input=self.description, model=DbAHProducts
             )
+            model = "ah"
+        if not products:
+            products = self.connector.search_products(
+                query=self.description, size=15, page=0
+            )["products"]
+            model = "api"
         if not products:
             self.product_not_found = True
             return
-        matched_product, is_matched = self._match_product(products)
+        matched_product, is_matched = self._match_product(products, model)
 
-        self.product_not_found = not is_matched
+        # This needs major refactoring
+        if not is_matched:
+            if model != "api":
+                # If there is no exact match in the database, add the
+                # products to the potential products and then search the AH API
+                self.potential_products = {
+                    "products": [
+                        product[1] for product in products
+                    ],  # omit similarity scores
+                    "model": model,
+                }
+                # Search AH API
+                products = self.connector.search_products(
+                    query=self.description, size=15, page=0
+                )["products"]
+                model = "api"
+                if not products:
+                    self.product_not_found = True
+                    return
+                matched_product, is_matched = self._match_product(products, model)
+            if not is_matched:
+                self.product_not_found = True
         self.name = matched_product.title
         self.product_id = matched_product.webshop_id
         self.category = db_handler.find_category_by_name(

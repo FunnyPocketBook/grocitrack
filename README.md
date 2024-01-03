@@ -29,15 +29,18 @@ Basically, what works now already is that all receipts and the groceries from th
 
 ### Todo
 - [x] Add product categories
-- [x] Proper logging
-- [ ] Handle missing category
-  - [ ] If category not found, fetch it, add it to database, continue
+- [ ] Proper logging
+- [ ] ~~Handle missing category~~ Shouldn't occur, since all categories are fetched weekly
+  - [ ] ~~If category not found, fetch it, add it to database, continue~~
 - [x] Handle product not found
   - [x] Match by "previously bought item"
   - [ ] Extend the search by matching on all categories and not just the subcategory
-  - [ ] Create new table to store all unmatched products/all potential matches
-  - ~~[ ] Split name into tokens and search for each token~~
-  - ~~[ ] If no results, use LLM (LLama) to find out what the name was meant to be~~
+  - [ ] Extend the search by `LIKE %name%` and weighing those results higher
+  - [x] Create new table to store all unmatched products/all potential matches
+  - [ ] ~~Split name into tokens and search for each token~~
+  - [ ] ~~If no results, use LLM (LLama) to find out what the name was meant to be~~
+- [ ] Create superclass for DbAHProducts DbPreviousProducts
+- [ ] Refactor Product._set_details()
 - [ ] Discount not bound to any products
 - [ ] Frontend in Vue.js
 - [ ] Show average percentage saved (per category and total)

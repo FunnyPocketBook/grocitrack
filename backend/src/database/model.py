@@ -279,6 +279,24 @@ class DbProduct(Base):
     potential_products = Column(JSONB)
 
 
+class DbPotentialProduct(Base):
+    """PotentialProduct model
+
+    Attributes:
+        id (int): PotentialProduct id
+        product (int): Product id
+        potential_ah_product (int): Potential AHProduct id
+        potential_previous_product (int): Potential PreviousProduct id"""
+
+    __tablename__ = "potential_products"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    product = Column(Integer, ForeignKey("products.id"), nullable=False)
+    potential_ah_product = Column(Integer, ForeignKey("ah_products.id"), nullable=True)
+    potential_previous_product = Column(
+        Integer, ForeignKey("previous_products.id"), nullable=True
+    )
+
+
 class DbDiscount(Base):
     """Discount model
 

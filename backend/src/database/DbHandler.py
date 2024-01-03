@@ -5,6 +5,7 @@ from database.model import (
     DbPreviousProducts,
     DbReceipt,
     DbProduct,
+    DbPotentialProduct,
     DbDiscount,
     DbLocation,
     DbCategory,
@@ -368,7 +369,6 @@ class DbHandler:
             )
             self._session.add(dbCategoryProduct)
             self._session.flush()
-            log.debug(f'Added category "{dbCategory.name}" to product "{product.name}"')
         self._session.commit()
         return dbCategories
 
@@ -475,10 +475,28 @@ class DbHandler:
             unit=product.unit,
             price=product.price,
             total_price=product.total_price,
-            potential_products=product.potential_products,
             product_not_found=product.product_not_found,
         )
         self._session.add(dbProduct)
+        self._session.flush()
+
+        potential_products = []
+        if product.potential_products:
+            for potential_product in product.potential_products["products"]:
+                if product.potential_products["model"] == "previous":
+                    dbPotentialProduct = DbPotentialProduct(
+                        product=dbProduct.id,
+                        potential_previous_product=potential_product.id,
+                    )
+                elif product.potential_products["model"] == "ah":
+                    dbPotentialProduct = DbPotentialProduct(
+                        product=dbProduct.id,
+                        potential_ah_product=potential_product.id,
+                    )
+                else:
+                    raise Exception("Invalid model")
+                potential_products.append(dbPotentialProduct)
+            self._session.add_all(potential_products)
         self._session.commit()
         log.debug(f'Added product "{product.name}" to database')
         return dbProduct
@@ -494,8 +512,10 @@ class DbHandler:
 
         Returns:
             list[DbProduct]: The added products"""
-        dbProducts = [
-            DbProduct(
+        dbProducts = []
+        potential_products = []
+        for product in products:
+            dbProduct = DbProduct(
                 product_id=product.product_id,
                 description=product.description,
                 name=product.name,
@@ -504,15 +524,33 @@ class DbHandler:
                 unit=product.unit,
                 price=product.price,
                 total_price=product.total_price,
-                potential_products=product.potential_products,
                 product_not_found=product.product_not_found,
             )
-            for product in products
-        ]
+            # dbProducts.append(dbProduct)
+            self._session.add(dbProduct)
+            self._session.flush()
+            if product.potential_products:
+                for potential_product in product.potential_products["products"]:
+                    if product.potential_products["model"] == "previous":
+                        dbPotentialProduct = DbPotentialProduct(
+                            product=dbProduct.id,
+                            potential_previous_product=potential_product.id,
+                        )
+                    elif product.potential_products["model"] == "ah":
+                        dbPotentialProduct = DbPotentialProduct(
+                            product=dbProduct.id,
+                            potential_ah_product=potential_product.id,
+                        )
+                    else:
+                        raise Exception("Invalid model")
+                    potential_products.append(dbPotentialProduct)
         try:
-            self._session.add_all(dbProducts)
+            # self._session.add_all(dbProducts)
+            # self._session.flush()
+            if potential_products:
+                self._session.add_all(potential_products)
             self._session.commit()
-            log.debug(f"Added {len(dbProducts)} products to database")
+            # log.debug(f"Added {len(dbProducts)} products to database")
         except Exception as e:
             log.error(f"Error adding products: {e}")
             self._session.rollback()
