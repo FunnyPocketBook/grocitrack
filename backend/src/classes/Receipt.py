@@ -200,18 +200,7 @@ class Receipt:
         Returns:
             Product: A Product object.
         """
-        if "statiegeld" in item["description"].lower():
-            product = Product(
-                1.0,
-                None,
-                item["description"],
-                None,
-                string_to_float(item["amount"]),
-                None,
-            )
-            return None
-        elif "airmiles" in item["description"].lower():
-            product = Product(1.0, None, item["description"], None, 0, None)
+        if not item["quantity"]:
             return None
         else:
             quantity, unit = self._parse_quantity(item["quantity"])
@@ -224,7 +213,13 @@ class Receipt:
                 item["indicator"] = None
             amount = string_to_float(item["amount"])
             product = Product(
-                quantity, unit, item["description"], price, amount, item["indicator"]
+                quantity=quantity,
+                unit=unit,
+                description=item["description"],
+                price=price,
+                total_price=amount,
+                indicator=item["indicator"],
+                datetime=self.datetime,
             )
         return product
 

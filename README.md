@@ -32,10 +32,12 @@ Basically, what works now already is that all receipts and the groceries from th
 - [x] Proper logging
 - [ ] Handle missing category
   - [ ] If category not found, fetch it, add it to database, continue
-- [ ] Handle product not found
-  - [ ] Match by "previously bought item"
-  - [ ] Split name into tokens and search for each token
-  - [ ] If no results, use LLM (LLama) to find out what the name was meant to be
+- [x] Handle product not found
+  - [x] Match by "previously bought item"
+  - [ ] Extend the search by matching on all categories and not just the subcategory
+  - [ ] Create new table to store all unmatched products/all potential matches
+  - ~~[ ] Split name into tokens and search for each token~~
+  - ~~[ ] If no results, use LLM (LLama) to find out what the name was meant to be~~
 - [ ] Discount not bound to any products
 - [ ] Frontend in Vue.js
 - [ ] Show average percentage saved (per category and total)

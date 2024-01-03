@@ -23,6 +23,7 @@ import logging
 from sqlalchemy import func, text, select
 
 log = logging.getLogger(__name__)
+logging.getLogger("connectionpool").setLevel(logging.WARNING)
 
 
 class DbHandler:
@@ -232,8 +233,12 @@ class DbHandler:
         )
 
     def search_product(
-        self, input: str, threshold: float = 0.2, top_n_scores: int = 5
-    ) -> list[DbAHProducts]:
+        self,
+        input: str,
+        threshold: float = 0.2,
+        top_n_scores: int = 5,
+        model: DbAHProducts | DbPreviousProducts = DbAHProducts,
+    ) -> list:
         """Searches for a product in the database. The search is based on the similarity of the product name and the category name.
 
         Args:
@@ -245,14 +250,14 @@ class DbHandler:
             list[DbAHProducts]: The list of products
         """
         max_score = func.greatest(
-            func.similarity(DbAHProducts.title, func.lower(input)),
-            func.similarity(DbAHProducts.sub_category, func.lower(input)),
+            func.similarity(model.title, func.lower(input)),
+            func.similarity(model.sub_category, func.lower(input)),
         )
         # ScoredProducts Subquery
         scored_products_subq = (
             select(
                 [
-                    DbAHProducts.id,
+                    model.id,
                     max_score.label("max_score"),
                 ]
             )
@@ -274,17 +279,17 @@ class DbHandler:
             [func.min(top_n_scores_subq.c.max_score).label("min_top_score")]
         ).alias("min_score")
 
-        ScoredProducts = aliased(DbAHProducts, scored_products_subq)
+        ScoredProducts = aliased(model, scored_products_subq)
 
         result_query = (
-            self._session.query(scored_products_subq.c.max_score, DbAHProducts)
-            .join(ScoredProducts, DbAHProducts.id == ScoredProducts.id)
+            self._session.query(scored_products_subq.c.max_score, model)
+            .join(ScoredProducts, model.id == ScoredProducts.id)
             .filter(
                 scored_products_subq.c.max_score
                 >= select([min_score_subq.c.min_top_score]).scalar_subquery()
             )
-            .order_by(scored_products_subq.c.max_score.desc())
-        )
+        ).order_by(scored_products_subq.c.max_score.desc())
+
         result = result_query.all()
         return result
 
@@ -568,43 +573,45 @@ class DbHandler:
         Returns:
             list[DbPreviousProducts]: The added products"""
         existing_prev_products = self.get_prev_products()
-
+        product_ids = [product.webshop_id for product in products]
         # if the ID of the product is already in the database but the name is different, replace the existing product with the new one
         # Go through existing_prev_products and check if the product ID is in the list of products to add
         # If it is, check if the name is different. If it is, replace the existing product with the new one
         for existing_prev_product in existing_prev_products:
-            if existing_prev_product.webshop_id in [
-                product.webshop_id for product in products
-            ]:
-                for product in products:
-                    if (
-                        product.webshop_id == existing_prev_product.webshop_id
-                        and product.title != existing_prev_product.title
-                    ):
-                        self._session.delete(existing_prev_product)
-                        self._session.add(product)
-                        self._session.commit()
-                        log.debug(
-                            f'Updated previous product "{existing_prev_product.title}" to "{product.title}"'
-                        )
+            if existing_prev_product.webshop_id in product_ids:
+                index = product_ids.index(existing_prev_product.webshop_id)
+                product = products[index]
+                if product.webshop_id == existing_prev_product.webshop_id and (
+                    product.title != existing_prev_product.title
+                    or product.current_price != existing_prev_product.current_price
+                    or product.price_before_bonus
+                    != existing_prev_product.price_before_bonus
+                ):
+                    self._session.delete(existing_prev_product)
+                    self._session.add(product)
+                    self._session.commit()
+                    log.debug(f'Updated previous product "{product.title}"')
 
         existing_prev_product_ids = [
             prev_product.webshop_id for prev_product in existing_prev_products
         ]
-        products = [
+        new_products = [
             product
             for product in products
             if product.webshop_id not in existing_prev_product_ids
         ]
+        if len(new_products) == 0:
+            log.debug("No new previous products to add")
+            return []
         try:
-            self._session.add_all(products)
+            self._session.add_all(new_products)
             self._session.commit()
-            log.debug(f"Added {len(products)} AH products to database")
+            log.debug(f"Added {len(new_products)} previous products to database")
         except Exception as e:
             log.error(f"Error adding products: {e}")
             self._session.rollback()
             raise
-        return products
+        return new_products
 
     def add_discount(self, discount: Discount, receipt_id: int) -> DbDiscount:
         """Adds a discount to the database

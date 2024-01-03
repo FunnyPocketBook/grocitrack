@@ -1,7 +1,9 @@
 from supermarktconnector.ah import AHConnector
-import pandas as pd
 import re
 from math import isnan
+from datetime import datetime
+
+from database.model import DbAHProducts, DbPreviousProducts
 
 
 class Product:
@@ -15,6 +17,7 @@ class Product:
         price: float = None,
         total_price: float = None,
         indicator: str = None,
+        datetime: datetime = None,
     ):
         self.quantity = quantity
         self.unit = unit
@@ -27,13 +30,47 @@ class Product:
         self.indicator = indicator
         self.potential_products = None
         self.product_not_found = False
+        self.datetime = datetime
         self._set_details()
 
     @property
     def connector(self):
         return type(self)._connector
 
-    # def _match_product(self, products: list[DbAHProducts]):
+    def _match_product(
+        self, products: list[(float, DbAHProducts)]
+    ) -> (DbAHProducts, bool):
+        """Matches the product with the products in the database.
+
+        Args:
+            products (list[DbAHProducts]): The products to match.
+
+        Returns:
+            DbAHProducts: The matched product.
+            bool: Whether the product is matched.
+
+        """
+        for similarity, product in products:
+            if self.quantity == 1:
+                if (
+                    product.price_before_bonus == self.total_price
+                    or product.current_price == self.total_price
+                ):
+                    return product, True
+            else:
+                if self.unit and self.unit.lower() == "kg":
+                    unit_price = self._clean_unit_price_description(
+                        product.unit_price_description
+                    )
+                    if unit_price == self.price:
+                        return product, True
+                else:
+                    if (
+                        product.current_price == self.price
+                        or product.price_before_bonus == self.price
+                    ):
+                        return product, True
+        return products[0][1], False
 
     def _set_details(self):
         """Fetches and sets the details of the product."""
@@ -41,57 +78,26 @@ class Product:
 
         db_handler = DbHandler()
 
-        if (
-            "statiegeld" in self.description.lower()
-            or "airmiles" in self.description.lower()
-        ):
+        if not self.quantity:
             return
-        result2 = self.connector.search_products(
-            query=self.description, size=15, page=0
+        products = db_handler.search_product(
+            input=self.description, model=DbPreviousProducts
         )
-        result = db_handler.search_product(input=self.description)
-        if result["products"] == []:
-            # TODO: create function to match product
+        if not products:
+            products = db_handler.search_product(
+                input=self.description, model=DbAHProducts
+            )
+        if not products:
             self.product_not_found = True
             return
-        df = pd.DataFrame(result["products"], columns=result["products"][0].keys())
-        if "unitPriceDescription" in df.columns:
-            df["unitPriceDescription"] = df["unitPriceDescription"].apply(
-                self._clean_unit_price_description
-            )
-        else:
-            df["unitPriceDescription"] = None
-        if self.unit and self.unit.lower() == "kg":
-            filtered_rows = df[df["unitPriceDescription"] == self.price]
-        elif "priceBeforeBonus" in df.columns:
-            if self.quantity == 1:
-                filtered_rows = df[df["priceBeforeBonus"] == self.total_price]
-            else:
-                filtered_rows = df[df["priceBeforeBonus"] == self.price]
-        else:
-            filtered_rows = df[df["currentPrice"] == self.price]
+        matched_product, is_matched = self._match_product(products)
 
-        length = filtered_rows.shape[0]
-        if length == 0:
-            row = df.iloc[0]
-            self.potential_products = result["products"]
-            self.product_not_found = True
-        elif length == 1:
-            row = filtered_rows.iloc[0]
-        else:
-            row = filtered_rows.iloc[0]
-            self.potential_products = filtered_rows.to_dict(orient="records")
-            self.product_not_found = True
-
-        if self.potential_products:
-            for item in self.potential_products:
-                for key in item:
-                    if isinstance(item[key], float) and isnan(item[key]):
-                        item[key] = None
-
-        self.name = row["title"]
-        self.product_id = str(row["webshopId"])
-        self.category = db_handler.find_category_by_name(row["subCategory"]).taxonomy_id
+        self.product_not_found = not is_matched
+        self.name = matched_product.title
+        self.product_id = matched_product.webshop_id
+        self.category = db_handler.find_category_by_name(
+            matched_product.sub_category
+        ).taxonomy_id
 
     def _get_categories(
         self, category_details: dict, product_id: int, taxonomy: str

@@ -7,7 +7,7 @@ from database.model import DbPreviousProducts
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(module)s: %(message)s",
-    level=logging.INFO,
+    level=logging.DEBUG,
     handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()],
 )
 log = logging.getLogger(__name__)

@@ -145,7 +145,8 @@ class DbAHProducts(Base):
     multiple_item_promotion = Column(Boolean)
     stickers = Column(JSONB)
     order_availability_description = Column(String(255))
-    date_added = Column(DateTime, default=datetime.datetime.utcnow)
+    date_added = Column(DateTime)
+    # date_added = Column(DateTime, default=lambda: datetime.datetime.now(datetime.UTC))
 
 
 class DbPreviousProducts(Base):

@@ -1,8 +1,10 @@
 from supermarktconnector.ah import AHConnector
+from ah_api import search_all_products
 import logging
 import inflection
 from database.DbHandler import DbHandler
 from database.model import DbAHProducts
+import datetime
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(module)s: %(message)s",
@@ -17,8 +19,9 @@ def fetch_products() -> list[DbAHProducts]:
     all_categories = connector.get_categories()
     all_products = []
     set_product_ids = set()
+    date = datetime.datetime.now(datetime.timezone.utc)
     for category in all_categories:
-        products_in_category = connector.search_all_products(taxonomyId=category["id"])
+        products_in_category = search_all_products(taxonomyId=category["id"])
         for product in products_in_category:
             if product["webshopId"] in set_product_ids:
                 continue
@@ -27,7 +30,7 @@ def fetch_products() -> list[DbAHProducts]:
                 for key, value in product.items()
                 if "virtual" not in key.lower()
             }
-            dbAHProduct = DbAHProducts(**product)
+            dbAHProduct = DbAHProducts(date_added=date, **product)
             all_products.append(dbAHProduct)
             set_product_ids.add(product["webshop_id"])
         log.info(f"Added products from category {category['name']}")
