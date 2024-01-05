@@ -65,14 +65,11 @@ class DbAHProducts(Base):
         shop_type (str): Product shop type
         available_online (bool): Product available online
         is_previously_bought (bool): Product is previously bought
-        description_highlights (str): Product description highlights
         nutriscore (str): Product nutriscore
         nix18 (bool): Product nix18
         is_stapel_bonus (bool): Product is stapel bonus
         property_icons (JSON): Product property icons
-        extra_descriptions (JSON): Product extra descriptions
         is_bonus (bool): Product is bonus
-        description_full (str): Product description full
         is_orderable (bool): Product is orderable
         is_infinite_bonus (bool): Product is infinite bonus
         is_sample (bool): Product is sample
@@ -114,14 +111,11 @@ class DbAHProducts(Base):
     shop_type = Column(String(255))
     available_online = Column(Boolean)
     is_previously_bought = Column(Boolean)
-    description_highlights = Column(Text)
     nutriscore = Column(String(1))
     nix18 = Column(Boolean)
     is_stapel_bonus = Column(Boolean)
     property_icons = Column(JSONB)
-    extra_descriptions = Column(JSONB)
     is_bonus = Column(Boolean)
-    description_full = Column(Text)
     is_orderable = Column(Boolean)
     is_infinite_bonus = Column(Boolean)
     is_sample = Column(Boolean)
@@ -167,14 +161,11 @@ class DbPreviousProducts(Base):
         shop_type (str): Product shop type
         available_online (bool): Product available online
         is_previously_bought (bool): Product is previously bought
-        description_highlights (str): Product description highlights
         nutriscore (str): Product nutriscore
         nix18 (bool): Product nix18
         is_stapel_bonus (bool): Product is stapel bonus
         property_icons (JSON): Product property icons
-        extra_descriptions (JSON): Product extra descriptions
         is_bonus (bool): Product is bonus
-        description_full (str): Product description full
         is_orderable (bool): Product is orderable
         is_infinite_bonus (bool): Product is infinite bonus
         is_sample (bool): Product is sample
@@ -215,14 +206,11 @@ class DbPreviousProducts(Base):
     shop_type = Column(String(255))
     available_online = Column(Boolean)
     is_previously_bought = Column(Boolean)
-    description_highlights = Column(Text)
     nutriscore = Column(String(1))
     nix18 = Column(Boolean)
     is_stapel_bonus = Column(Boolean)
     property_icons = Column(JSONB)
-    extra_descriptions = Column(JSONB)
     is_bonus = Column(Boolean)
-    description_full = Column(Text)
     is_orderable = Column(Boolean)
     is_infinite_bonus = Column(Boolean)
     is_sample = Column(Boolean)
@@ -329,8 +317,8 @@ class DbCategory(Base):
 
     __tablename__ = "categories"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(255), nullable=False, unique=True)
-    slug = Column(String(255), nullable=False, unique=True)
+    name = Column(String(255), nullable=False, unique=False)
+    slug = Column(String(255), nullable=False, unique=False)
     english = Column(String(255), nullable=False, unique=False)
     taxonomy_id = Column(String(255), nullable=False, unique=True)
 

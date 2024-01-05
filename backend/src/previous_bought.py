@@ -5,13 +5,6 @@ from ah_api import get_previously_bought
 from database.DbHandler import DbHandler
 from database.model import DbPreviousProducts
 
-logging.basicConfig(
-    format="%(asctime)s [%(levelname)s] %(module)s: %(message)s",
-    level=logging.DEBUG,
-    handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()],
-)
-log = logging.getLogger(__name__)
-
 
 def fetch_previous_bought():
     prev_bought = get_previously_bought()
@@ -26,6 +19,8 @@ def fetch_previous_bought():
             inflection.underscore(key): value
             for key, value in product.items()
             if "virtual" not in key.lower()
+            and key
+            not in ["descriptionHighlights", "descriptionFull", "extraDescriptions"]
         }
         dbPrevProduct = DbPreviousProducts(**product)
         previous_products.append(dbPrevProduct)
@@ -34,6 +29,13 @@ def fetch_previous_bought():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        format="%(asctime)s [%(levelname)s] %(module)s: %(message)s",
+        level=logging.DEBUG,
+        handlers=[logging.FileHandler("grocitrack.log"), logging.StreamHandler()],
+    )
+    log = logging.getLogger(__name__)
+
     db_handler = DbHandler()
     previous_products = fetch_previous_bought()
     db_handler.add_prev_products(previous_products)

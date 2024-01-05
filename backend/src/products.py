@@ -6,13 +6,6 @@ from database.DbHandler import DbHandler
 from database.model import DbAHProducts
 import datetime
 
-logging.basicConfig(
-    format="%(asctime)s [%(levelname)s] %(module)s: %(message)s",
-    level=logging.INFO,
-    handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()],
-)
-log = logging.getLogger(__name__)
-
 
 def fetch_products() -> list[DbAHProducts]:
     connector = AHConnector()
@@ -29,6 +22,8 @@ def fetch_products() -> list[DbAHProducts]:
                 inflection.underscore(key): value
                 for key, value in product.items()
                 if "virtual" not in key.lower()
+                and key
+                not in ["descriptionHighlights", "descriptionFull", "extraDescriptions"]
             }
             dbAHProduct = DbAHProducts(date_added=date, **product)
             all_products.append(dbAHProduct)
@@ -38,6 +33,12 @@ def fetch_products() -> list[DbAHProducts]:
 
 
 if __name__ == "__main__":
-    dbHandler = DbHandler()
+    logging.basicConfig(
+        format="%(asctime)s [%(levelname)s] %(module)s: %(message)s",
+        level=logging.INFO,
+        handlers=[logging.FileHandler("grocitrack.log"), logging.StreamHandler()],
+    )
+    log = logging.getLogger(__name__)
+    db_handler = DbHandler()
     all_products = fetch_products()
-    dbHandler.add_ah_products(all_products)
+    db_handler.add_ah_products(all_products)

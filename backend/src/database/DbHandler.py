@@ -12,19 +12,21 @@ from database.model import (
     DbCategoryHierarchy,
     DbCategoryProduct,
 )
+from config import Config
 from classes.Product import Product
 from classes.Receipt import Receipt
 from classes.Location import Location
 from classes.Discount import Discount
 from classes.Category import Category
 from sqlalchemy.orm import sessionmaker, aliased
+import re
 
 import logging
 
 from sqlalchemy import func, text, select
 
 log = logging.getLogger(__name__)
-logging.getLogger("connectionpool").setLevel(logging.WARNING)
+config = Config()
 
 
 class DbHandler:
@@ -52,12 +54,12 @@ class DbHandler:
 
         close()"""
 
-    _instance = None
+    # _instance = None
 
-    def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = super(DbHandler, cls).__new__(cls, *args, **kwargs)
-        return cls._instance
+    # def __new__(cls, *args, **kwargs):
+    #     if not cls._instance:
+    #         cls._instance = super(DbHandler, cls).__new__(cls, *args, **kwargs)
+    #     return cls._instance
 
     def __init__(self, _engine=engine):
         self._engine = _engine
@@ -70,10 +72,15 @@ class DbHandler:
             file_path (str): The path to the SQL file"""
         with open(file_path, "r", encoding="utf8") as file:
             script = file.read()
-        statements = script.split(";")
-        for statement in statements:
-            if statement.strip():
-                self._engine.execute(text(statement))
+        script = script.replace(":full", "::full")
+        statements = re.split(r";(?=\s*$)", script, flags=re.MULTILINE)
+
+        with self._engine.connect() as connection:
+            for statement in statements:
+                if statement := statement.strip():
+                    result = connection.execute(text(statement))
+                    log.debug(f"Changed {result.rowcount} rows")
+            connection.commit()
 
     def find_receipt(self, transaction_id: str) -> DbReceipt:
         """Finds a receipt by transaction_id
@@ -131,7 +138,7 @@ class DbHandler:
         try:
             return (
                 self._session.query(DbCategory)
-                .filter_by(taxonomy_id=taxonomy_id)
+                .filter_by(taxonomy_id=str(taxonomy_id))
                 .first()
             )
         except Exception:
@@ -256,12 +263,7 @@ class DbHandler:
         )
         # ScoredProducts Subquery
         scored_products_subq = (
-            select(
-                [
-                    model.id,
-                    max_score.label("max_score"),
-                ]
-            )
+            select(model.id, max_score.label("max_score"))
             .where(
                 max_score > threshold,
             )
@@ -269,7 +271,7 @@ class DbHandler:
         )
 
         top_n_scores_subq = (
-            select([scored_products_subq.c.max_score])
+            select(scored_products_subq.c.max_score)
             .group_by(scored_products_subq.c.max_score)
             .order_by(scored_products_subq.c.max_score.desc())
             .limit(top_n_scores)
@@ -277,7 +279,7 @@ class DbHandler:
         )
 
         min_score_subq = select(
-            [func.min(top_n_scores_subq.c.max_score).label("min_top_score")]
+            func.min(top_n_scores_subq.c.max_score).label("min_top_score")
         ).alias("min_score")
 
         ScoredProducts = aliased(model, scored_products_subq)
@@ -287,12 +289,19 @@ class DbHandler:
             .join(ScoredProducts, model.id == ScoredProducts.id)
             .filter(
                 scored_products_subq.c.max_score
-                >= select([min_score_subq.c.min_top_score]).scalar_subquery()
+                >= select(min_score_subq.c.min_top_score).scalar_subquery()
             )
         ).order_by(scored_products_subq.c.max_score.desc())
 
         result = result_query.all()
         return result
+
+    def get_ah_produts(self) -> list[DbAHProducts]:
+        """Gets all AH products from the database
+
+        Returns:
+            list[DbAHProducts]: The list of AH products"""
+        return self._session.query(DbAHProducts).all()
 
     def get_category_hierarchy_parents(
         self, taxonomy_id: str, result: list[DbCategory]
@@ -428,8 +437,10 @@ class DbHandler:
                 slug=category.slug,
                 taxonomy_id=category.taxonomy_id,
             )
+            if config.get("deepl", "translate"):
+                dbCategory.english = translate(category.name)
             self._session.add(dbCategory)
-            self._session.commit()
+            self._session.flush()
 
             if parent is not None:
                 dbCategoryHierarchy = DbCategoryHierarchy(
@@ -437,7 +448,7 @@ class DbHandler:
                     child=dbCategory.taxonomy_id,
                 )
                 self._session.add(dbCategoryHierarchy)
-                self._session.commit()
+                self._session.flush()
 
             if category.children is not None:
                 for child in category.children:
@@ -449,12 +460,13 @@ class DbHandler:
                 dbCategory.name = category.name
                 dbCategory.slug = category.slug
                 dbCategory.english = translate(category.name)
-                self._session.commit()
+                self._session.flush()
                 log.info(f'Updated category "{dbCategory.name}" to {category.name}')
 
             if category.children is not None:
                 for child in category.children:
                     self.add_category(child, dbCategory)
+        self._session.commit()
         return dbCategory
 
     def add_product(self, product: "Product", receipt_id: int) -> DbProduct:
@@ -526,7 +538,7 @@ class DbHandler:
                 total_price=product.total_price,
                 product_not_found=product.product_not_found,
             )
-            # dbProducts.append(dbProduct)
+            dbProducts.append(dbProduct)
             self._session.add(dbProduct)
             self._session.flush()
             if product.potential_products:
@@ -550,7 +562,7 @@ class DbHandler:
             if potential_products:
                 self._session.add_all(potential_products)
             self._session.commit()
-            # log.debug(f"Added {len(dbProducts)} products to database")
+            log.info(f"Added {len(dbProducts)} products to database")
         except Exception as e:
             log.error(f"Error adding products: {e}")
             self._session.rollback()
@@ -597,7 +609,7 @@ class DbHandler:
             DbPreviousProducts: The added product"""
         self._session.add(product)
         self._session.commit()
-        log.debug(f'Added previous product "{product.title}" to database')
+        log.info(f'Added previous product "{product.title}" to database')
         return product
 
     def add_prev_products(
@@ -625,10 +637,16 @@ class DbHandler:
                     or product.price_before_bonus
                     != existing_prev_product.price_before_bonus
                 ):
-                    self._session.delete(existing_prev_product)
-                    self._session.add(product)
+                    # replace all fields in existing_prev_product with the new product
+                    for field in existing_prev_product.__table__.columns:
+                        if field.name != "id":
+                            setattr(
+                                existing_prev_product,
+                                field.name,
+                                getattr(product, field.name),
+                            )
                     self._session.commit()
-                    log.debug(f'Updated previous product "{product.title}"')
+                    log.info(f'Updated previous product "{product.title}"')
 
         existing_prev_product_ids = [
             prev_product.webshop_id for prev_product in existing_prev_products
@@ -644,7 +662,7 @@ class DbHandler:
         try:
             self._session.add_all(new_products)
             self._session.commit()
-            log.debug(f"Added {len(new_products)} previous products to database")
+            log.info(f"Added {len(new_products)} previous products to database")
         except Exception as e:
             log.error(f"Error adding products: {e}")
             self._session.rollback()
@@ -695,7 +713,7 @@ class DbHandler:
         try:
             self._session.add_all(dbDiscounts)
             self._session.commit()
-            log.debug(f"Added {len(dbDiscounts)} discounts to database")
+            log.info(f"Added {len(dbDiscounts)} discounts to database")
         except Exception as e:
             log.error(f"Error adding discounts: {e}")
             self._session.rollback()
@@ -739,7 +757,7 @@ class DbHandler:
         try:
             self._session.add_all(dbLocations)
             self._session.commit()
-            log.debug(f"Added {len(dbLocations)} locations to database")
+            log.info(f"Added {len(dbLocations)} locations to database")
         except Exception as e:
             log.error(f"Error adding locations: {e}")
             self._session.rollback()
@@ -765,7 +783,7 @@ class DbHandler:
         try:
             self._session.add_all(dbProducts)
             self._session.commit()
-            log.debug(f"Added {len(dbProducts)} products to database")
+            log.info(f"Added {len(dbProducts)} products to database")
         except Exception as e:
             log.error(f"Error adding products: {e}")
             self._session.rollback()
@@ -798,7 +816,7 @@ class DbHandler:
         try:
             self._session.add_all(dbReceipts)
             self._session.commit()
-            log.debug(f"Added {len(dbReceipts)} receipts to database")
+            log.info(f"Added {len(dbReceipts)} receipts to database")
         except Exception as e:
             log.error(f"Error adding receipts: {e}")
             self._session.rollback()
