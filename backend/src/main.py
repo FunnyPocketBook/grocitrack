@@ -78,7 +78,9 @@ def main():
         log.info(f"Processed {receipts_processed}/{len(receipts)} receipts.")
 
     db_handler.close()
-    log.info(f"Added {len(receipts)} new receipts to the database.")
+    log.info(
+        f"Added {receipts_processed} new receipts to the database. {len(receipts) - receipts_processed} receipts were empty."
+    )
 
 
 if __name__ == "__main__":
