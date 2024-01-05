@@ -4,7 +4,7 @@ from config import Config
 import logging
 import math
 
-logging.getLogger("connectionpool").setLevel(logging.WARNING)
+logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
 
 config = Config()
 
