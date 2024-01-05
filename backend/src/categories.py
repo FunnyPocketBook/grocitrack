@@ -3,6 +3,7 @@ import random
 import time
 from typing import Optional
 import logging
+import pickle
 
 from supermarktconnector.ah import AHConnector
 
@@ -37,10 +38,17 @@ def get_category(
         category.set_parent(parent)
     try:
         children = connector.get_sub_categories(category.taxonomy_id)["children"]
-        if children:
-            get_categories(children, category)
-    except Exception as e:
-        log.error(f"Error getting subcategories of {category.name}: {e}")
+    except Exception:
+        try:
+            time.sleep(timeout)
+            children = connector.get_sub_categories(category.taxonomy_id)["children"]
+        except Exception as e:
+            log.error(
+                f"Error getting subcategories of {category.name} {category.taxonomy_id}: {e}"
+            )
+            return category
+    if children:
+        get_categories(children, category)
     return category
 
 
@@ -59,6 +67,10 @@ if __name__ == "__main__":
     connector = AHConnector()
     categories = connector.get_categories()
     categories = get_categories(categories)
+
+    with open("categories.pickle", "rb") as f:
+        categories = pickle.load(f)
+    db_handler = DbHandler()
+
     for category in categories:
-        db_handler = DbHandler()
         db_handler.add_category(category)
