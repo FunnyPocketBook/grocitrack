@@ -7,11 +7,10 @@ logging.getLogger("deepl").setLevel(logging.WARNING)
 
 config = Config()
 
-translator = deepl.Translator(config.get("deepl", "api_key"))
 
 def string_to_float(string: str) -> float:
     """Converts the string to a float.
-    
+
     Args:
         string (str): The number string.
 
@@ -23,9 +22,11 @@ def string_to_float(string: str) -> float:
     return float(string.replace(",", "."))
 
 
-def translate(text: str, source_language: str="NL", target_language: str="EN-US") -> str:
+def translate(
+    text: str, source_language: str = "NL", target_language: str = "EN-US"
+) -> str:
     """Translates the text.
-    
+
     Args:
         text (str): The text to translate.
         source_language (str): The source language.
@@ -34,5 +35,8 @@ def translate(text: str, source_language: str="NL", target_language: str="EN-US"
     Returns:
         str: The translated text.
     """
-    translated_text = translator.translate_text(text, source_lang=source_language, target_lang=target_language).text
+    translator = deepl.Translator(config.get("deepl", "api_key"))
+    translated_text = translator.translate_text(
+        text, source_lang=source_language, target_lang=target_language
+    ).text
     return translated_text
