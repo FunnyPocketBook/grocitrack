@@ -63,9 +63,9 @@ class Product:
         if model == "api":  # If the results came from searching the AH API
             for product in products:
                 if self.quantity == 1:
-                    if product["priceBeforeBonus"] == self.total_price or (
-                        "currentPrice" in product
-                        and product["currentPrice"] == self.total_price
+                    if (
+                        product.get("priceBeforeBonus") == self.total_price
+                        or product.get("currentPrice") == self.total_price
                     ):
                         return MatchedProduct(
                             product["title"],
@@ -73,9 +73,13 @@ class Product:
                             product["subCategory"],
                         ), True
                 else:
-                    if self.unit and self.unit.lower() == "kg":
+                    if (
+                        self.unit
+                        and self.unit.lower() == "kg"
+                        and "unitPriceDescription" in product
+                    ):
                         unit_price = self._clean_unit_price_description(
-                            product["unitPriceDescription"]
+                            product.get("unitPriceDescription")
                         )
                         if unit_price == self.price:
                             return MatchedProduct(
@@ -85,8 +89,8 @@ class Product:
                             ), True
                     else:
                         if (
-                            product["currentPrice"] == self.price
-                            or product["priceBeforeBonus"] == self.price
+                            product.get("priceBeforeBonus") == self.price
+                            or product.get("currentPrice") == self.price
                         ):
                             return MatchedProduct(
                                 product["title"],
@@ -149,6 +153,12 @@ class Product:
             return
         matched_product, is_matched = self._match_product(products, model)
 
+        self.name = matched_product.title
+        self.product_id = matched_product.webshop_id
+        category = db_handler.find_category_by_name(matched_product.sub_category)
+        if category:
+            self.category = category.taxonomy_id
+
         # This needs major refactoring
         if not is_matched:
             if model != "api":
@@ -173,9 +183,9 @@ class Product:
                 self.product_not_found = True
         self.name = matched_product.title
         self.product_id = matched_product.webshop_id
-        self.category = db_handler.find_category_by_name(
-            matched_product.sub_category
-        ).taxonomy_id
+        category = db_handler.find_category_by_name(matched_product.sub_category)
+        if category:
+            self.category = category.taxonomy_id
 
     def _get_categories(
         self, category_details: dict, product_id: int, taxonomy: str
@@ -212,7 +222,11 @@ class Product:
 
         Returns:
             float: The cleaned unit price description."""
-        if isinstance(unit_price_description, float) and isnan(unit_price_description):
+        if (
+            not unit_price_description
+            or isinstance(unit_price_description, float)
+            and isnan(unit_price_description)
+        ):
             return None
         regex = r"(\d+.\d+)"
         return float(re.search(regex, unit_price_description).group(1))
