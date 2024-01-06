@@ -3,6 +3,7 @@
 ## Requirements
 
 - Python 3 (I tested it only on 3.10)
+- Postgres 14
 
 ## How to
 
