@@ -23,9 +23,9 @@ def main():
     log.info("Connected to database.")
 
     if not db_handler.get_ah_produts():
-        if os.path.exists("backend/src/database/ah_products.sql"):
+        if os.path.exists("database/ah_products.sql"):
             log.info("Creating products table from SQL file")
-            db_handler.execute_sql_file("backend/src/database/ah_products.sql")
+            db_handler.execute_sql_file("database/ah_products.sql")
             log.info("Created products table from SQL file")
         else:
             log.info("Fetching all products from AH API")
@@ -34,10 +34,10 @@ def main():
             log.info("Fetched products from AH API")
 
     if not db_handler.get_categories():
-        if os.path.exists("backend/src/database/categories.sql"):
+        if os.path.exists("database/categories.sql"):
             log.info("Creating categories table from SQL file")
-            db_handler.execute_sql_file("backend/src/database/categories.sql")
-            db_handler.execute_sql_file("backend/src/database/categories_hierarchy.sql")
+            db_handler.execute_sql_file("database/categories.sql")
+            db_handler.execute_sql_file("database/categories_hierarchy.sql")
             log.info("Created categories table from SQL file")
 
     log.info("Fetching previously bought products")
