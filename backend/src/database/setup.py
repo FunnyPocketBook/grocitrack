@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine, text
 from config import Config
 from database.model import Base
+import time
 
 
 config = Config()
@@ -9,7 +10,16 @@ engine = create_engine(
     pool_size=20,
     max_overflow=10,
 )
-Base.metadata.create_all(engine)
+
+attempts = 0
+while attempts < 5:
+    try:
+        Base.metadata.create_all(engine)
+        break
+    except Exception:
+        attempts += 1
+        time.sleep(5)
+
 
 sql_setup_statements = [
     "CREATE EXTENSION IF NOT EXISTS pg_trgm;",
