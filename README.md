@@ -9,14 +9,58 @@
 This application is using the API for the mobile AH app. Thanks to Rutgerdj for getting me started on the undocumented API, otherwise I'd have to do it with OCR...
 
 - Install dependencies with `pip install -r requirements.txt`
-- Adjust the `config.yml` file. The only thing that is required is `api.code`, which needs to be fetched as follows:
+- Rename the `config-template.yml` file to `config.yml`. The only thing that is required is `api.code`, which needs to be fetched as follows:
   - Visit https://login.ah.nl/secure/oauth/authorize?client_id=appie&redirect_uri=appie://login-exit&response_type=code
   - Open the dev tools and go to the network tab
   - Enter your credentials on the website and login. The page might not change at all but new requests in the network tab will appear.
-  - Filter the requests for status code 303
-  - In the response header of the request, look for `location`. The value that comes after `?code=` is the code that needs to be put into `api.code`
-- Change directory to thr `backend/src` folder
+  - Look for the GET request https://login.ah.nl/login/_next/data/blabla/nl/ingelogd.json with the `ingelogd.json` file
+  - In the response body of the request, look for the key `__N_REDIRECT` in the `pageProps` object. The value that comes after `appie://login-exit?code=` is the code that needs to be put into `api.code`
+- `cd` into `src`
 - Run `main.py`, for example `python main.py`
+
+### Docker compose
+If you're using Docker, you can start everything with `docker compose up`. It's spinning up a postgres and a pgadmin instance as well, such that you can look at your data. All that is needed is the `docker-compose.yml` file and the `config.yml`, which should be placed in the same directory.
+
+```yml
+version: "3.8"
+
+services:
+  grocitrack:
+    image: ghcr.io/funnypocketbook/receipt-scanner:master
+    container_name: grocitrack
+    volumes:
+      - ./config.yml:/app/config.yml
+    networks:
+      - grocitrack
+    depends_on:
+      - postgres
+  postgres:
+    image: postgres:14
+    container_name: postgres-grocitrack
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: grocitrack
+    ports:
+      - "5432:5432"
+    networks:
+      - grocitrack
+
+  pgadmin:
+    container_name: pgadmin4_container
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: root
+    ports:
+      - "5050:80"
+    networks:
+      - grocitrack
+
+networks:
+  grocitrack:
+```
+
 
 ### Functionalities
 Basically, what works now already is that all receipts and the groceries from the receipt are stored in a database. I want to add at least the categories (including translating them) to the database and include proper logging before I startsta the frontend.

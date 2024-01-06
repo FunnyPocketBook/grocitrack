@@ -3,11 +3,18 @@ from ah_api import search_all_products
 import logging
 import inflection
 from database.DbHandler import DbHandler
-from database.model import DbAHProducts
+from database.model import DbAHProduct
 import datetime
 
+logging.basicConfig(
+    format="%(asctime)s [%(levelname)s] %(module)s: %(message)s",
+    level=logging.INFO,
+    handlers=[logging.FileHandler("grocitrack.log"), logging.StreamHandler()],
+)
+log = logging.getLogger(__name__)
 
-def fetch_products() -> list[DbAHProducts]:
+
+def fetch_products() -> list[DbAHProduct]:
     connector = AHConnector()
     all_categories = connector.get_categories()
     all_products = []
@@ -25,7 +32,7 @@ def fetch_products() -> list[DbAHProducts]:
                 and key
                 not in ["descriptionHighlights", "descriptionFull", "extraDescriptions"]
             }
-            dbAHProduct = DbAHProducts(date_added=date, **product)
+            dbAHProduct = DbAHProduct(date_added=date, **product)
             all_products.append(dbAHProduct)
             set_product_ids.add(product["webshop_id"])
         log.info(f"Added products from category {category['name']}")
@@ -33,12 +40,6 @@ def fetch_products() -> list[DbAHProducts]:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        format="%(asctime)s [%(levelname)s] %(module)s: %(message)s",
-        level=logging.INFO,
-        handlers=[logging.FileHandler("grocitrack.log"), logging.StreamHandler()],
-    )
-    log = logging.getLogger(__name__)
     db_handler = DbHandler()
     all_products = fetch_products()
     db_handler.add_ah_products(all_products)

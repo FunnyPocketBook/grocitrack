@@ -1,0 +1,13 @@
+api:
+  access_token: token
+  code: code
+  refresh_token: token
+database:
+  host: postgres
+  database_name: grocitrack
+  password: admin
+  username: postgres
+deepl:
+  api_key: api-key
+  translate: false
+max_workers: 20

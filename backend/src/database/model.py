@@ -1,18 +1,17 @@
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import (
     ForeignKey,
-    Column,
     Integer,
     Float,
     String,
     DateTime,
     Boolean,
-    Text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-import datetime
+import datetime as dt
 
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
 
 class DbReceipt(Base):
@@ -29,12 +28,22 @@ class DbReceipt(Base):
 
     __tablename__ = "receipts"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    transaction_id = Column(String(255), nullable=False)
-    datetime = Column(DateTime)
-    location = Column(Integer, ForeignKey("locations.id"))
-    total_price = Column(Float)
-    total_discount = Column(Float)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    transaction_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    datetime: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True))
+    location: Mapped[int] = mapped_column(Integer, ForeignKey("locations.id"))
+    total_price: Mapped[float] = mapped_column(Float)
+    total_discount: Mapped[float] = mapped_column(Float)
+
+    products: Mapped[list["DbProduct"]] = relationship(
+        "DbProduct", back_populates="receipt_relation"
+    )
+    discounts: Mapped[list["DbDiscount"]] = relationship(
+        "DbDiscount", back_populates="receipt_relation"
+    )
+    location_relation: Mapped["DbLocation"] = relationship(
+        "DbLocation", back_populates="receipt_relation"
+    )
 
     def toJSON(self):
         return {
@@ -46,9 +55,8 @@ class DbReceipt(Base):
             "total_discount": self.total_discount,
         }
 
-
-class DbAHProducts(Base):
-    """AHProducts model. Mirrors the products that are available in the AH API.
+class DbAHProduct(Base):
+    """AHProduct model. Mirrors the products that are available in the AH API.
 
     Attributes:
         id (int): Product id
@@ -97,54 +105,57 @@ class DbAHProducts(Base):
     """
 
     __tablename__ = "ah_products"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    webshop_id = Column(String(255))
-    hq_id = Column(String(255))
-    title = Column(String(255))
-    sales_unit_size = Column(String(255))
-    images = Column(JSONB)
-    price_before_bonus = Column(Float)
-    order_availability_status = Column(String(255))
-    main_category = Column(String(255))
-    sub_category = Column(String(255))
-    brand = Column(String(255))
-    shop_type = Column(String(255))
-    available_online = Column(Boolean)
-    is_previously_bought = Column(Boolean)
-    nutriscore = Column(String(1))
-    nix18 = Column(Boolean)
-    is_stapel_bonus = Column(Boolean)
-    property_icons = Column(JSONB)
-    is_bonus = Column(Boolean)
-    is_orderable = Column(Boolean)
-    is_infinite_bonus = Column(Boolean)
-    is_sample = Column(Boolean)
-    is_sponsored = Column(Boolean)
-    discount_labels = Column(JSONB)
-    unit_price_description = Column(String(255))
-    auction_id = Column(String(255))
-    bonus_start_date = Column(DateTime)
-    bonus_end_date = Column(DateTime)
-    discount_type = Column(String(255))
-    segment_type = Column(String(255))
-    promotion_type = Column(String(255))
-    bonus_mechanism = Column(String(255))
-    current_price = Column(Float)
-    bonus_period_description = Column(String(255))
-    bonus_segment_id = Column(String(255))
-    bonus_segment_description = Column(String(255))
-    has_list_price = Column(Boolean)
-    is_bonus_price = Column(Boolean)
-    product_count = Column(Integer)
-    multiple_item_promotion = Column(Boolean)
-    stickers = Column(JSONB)
-    order_availability_description = Column(String(255))
-    date_added = Column(DateTime)
-    # date_added = Column(DateTime, default=lambda: datetime.datetime.now(datetime.UTC))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    webshop_id: Mapped[str] = mapped_column(String(255), nullable=True)
+    hq_id: Mapped[str] = mapped_column(String(255), nullable=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=True)
+    sales_unit_size: Mapped[str] = mapped_column(String(255), nullable=True)
+    images: Mapped[JSONB] = mapped_column(JSONB, nullable=True)
+    price_before_bonus: Mapped[float] = mapped_column(Float, nullable=True)
+    order_availability_status: Mapped[str] = mapped_column(String(255), nullable=True)
+    main_category: Mapped[str] = mapped_column(String(255), nullable=True)
+    sub_category: Mapped[str] = mapped_column(String(255), nullable=True)
+    brand: Mapped[str] = mapped_column(String(255), nullable=True)
+    shop_type: Mapped[str] = mapped_column(String(255), nullable=True)
+    available_online: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    is_previously_bought: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    nutriscore: Mapped[str] = mapped_column(String(1), nullable=True)
+    nix18: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    is_stapel_bonus: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    property_icons: Mapped[JSONB] = mapped_column(JSONB, nullable=True)
+    is_bonus: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    is_orderable: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    is_infinite_bonus: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    is_sample: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    is_sponsored: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    discount_labels: Mapped[JSONB] = mapped_column(JSONB, nullable=True)
+    unit_price_description: Mapped[str] = mapped_column(String(255), nullable=True)
+    auction_id: Mapped[str] = mapped_column(String(255), nullable=True)
+    bonus_start_date: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    bonus_end_date: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    discount_type: Mapped[str] = mapped_column(String(255), nullable=True)
+    segment_type: Mapped[str] = mapped_column(String(255), nullable=True)
+    promotion_type: Mapped[str] = mapped_column(String(255), nullable=True)
+    bonus_mechanism: Mapped[str] = mapped_column(String(255), nullable=True)
+    current_price: Mapped[float] = mapped_column(Float, nullable=True)
+    bonus_period_description: Mapped[str] = mapped_column(String(255), nullable=True)
+    bonus_segment_id: Mapped[str] = mapped_column(String(255), nullable=True)
+    bonus_segment_description: Mapped[str] = mapped_column(String(255), nullable=True)
+    has_list_price: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    is_bonus_price: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    product_count: Mapped[int] = mapped_column(Integer, nullable=True)
+    multiple_item_promotion: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    stickers: Mapped[JSONB] = mapped_column(JSONB, nullable=True)
+    order_availability_description: Mapped[str] = mapped_column(String(255), nullable=True)
+    date_added: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    potential_products: Mapped[list["DbPotentialProduct"]] = relationship(
+        "DbPotentialProduct", back_populates="ah_product_relation"
+    )
 
 
-class DbPreviousProducts(Base):
-    """PreviousProducts model.
+class DbPreviousProduct(Base):
+    """PreviousProduct model.
 
     Attributes:
         id (int): Product id
@@ -192,49 +203,52 @@ class DbPreviousProducts(Base):
     """
 
     __tablename__ = "previous_products"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    webshop_id = Column(String(255))
-    hq_id = Column(String(255))
-    title = Column(String(255))
-    sales_unit_size = Column(String(255))
-    images = Column(JSONB)
-    price_before_bonus = Column(Float)
-    order_availability_status = Column(String(255))
-    main_category = Column(String(255))
-    sub_category = Column(String(255))
-    brand = Column(String(255))
-    shop_type = Column(String(255))
-    available_online = Column(Boolean)
-    is_previously_bought = Column(Boolean)
-    nutriscore = Column(String(1))
-    nix18 = Column(Boolean)
-    is_stapel_bonus = Column(Boolean)
-    property_icons = Column(JSONB)
-    is_bonus = Column(Boolean)
-    is_orderable = Column(Boolean)
-    is_infinite_bonus = Column(Boolean)
-    is_sample = Column(Boolean)
-    is_sponsored = Column(Boolean)
-    discount_labels = Column(JSONB)
-    unit_price_description = Column(String(255))
-    auction_id = Column(String(255))
-    bonus_start_date = Column(DateTime)
-    bonus_end_date = Column(DateTime)
-    discount_type = Column(String(255))
-    segment_type = Column(String(255))
-    promotion_type = Column(String(255))
-    bonus_mechanism = Column(String(255))
-    current_price = Column(Float)
-    bonus_period_description = Column(String(255))
-    bonus_segment_id = Column(String(255))
-    bonus_segment_description = Column(String(255))
-    has_list_price = Column(Boolean)
-    is_bonus_price = Column(Boolean)
-    product_count = Column(Integer)
-    multiple_item_promotion = Column(Boolean)
-    stickers = Column(JSONB)
-    order_availability_description = Column(String(255))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    webshop_id: Mapped[str] = mapped_column(String(255), nullable=True)
+    hq_id: Mapped[str] = mapped_column(String(255), nullable=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=True)
+    sales_unit_size: Mapped[str] = mapped_column(String(255), nullable=True)
+    images: Mapped[JSONB] = mapped_column(JSONB, nullable=True)
+    price_before_bonus: Mapped[float] = mapped_column(Float, nullable=True)
+    order_availability_status: Mapped[str] = mapped_column(String(255), nullable=True)
+    main_category: Mapped[str] = mapped_column(String(255), nullable=True)
+    sub_category: Mapped[str] = mapped_column(String(255), nullable=True)
+    brand: Mapped[str] = mapped_column(String(255), nullable=True)
+    shop_type: Mapped[str] = mapped_column(String(255), nullable=True)
+    available_online: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    is_previously_bought: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    nutriscore: Mapped[str] = mapped_column(String(1), nullable=True)
+    nix18: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    is_stapel_bonus: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    property_icons: Mapped[JSONB] = mapped_column(JSONB, nullable=True)
+    is_bonus: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    is_orderable: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    is_infinite_bonus: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    is_sample: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    is_sponsored: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    discount_labels: Mapped[JSONB] = mapped_column(JSONB, nullable=True)
+    unit_price_description: Mapped[str] = mapped_column(String(255), nullable=True)
+    auction_id: Mapped[str] = mapped_column(String(255), nullable=True)
+    bonus_start_date: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    bonus_end_date: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    discount_type: Mapped[str] = mapped_column(String(255), nullable=True)
+    segment_type: Mapped[str] = mapped_column(String(255), nullable=True)
+    promotion_type: Mapped[str] = mapped_column(String(255), nullable=True)
+    bonus_mechanism: Mapped[str] = mapped_column(String(255), nullable=True)
+    current_price: Mapped[float] = mapped_column(Float, nullable=True)
+    bonus_period_description: Mapped[str] = mapped_column(String(255), nullable=True)
+    bonus_segment_id: Mapped[str] = mapped_column(String(255), nullable=True)
+    bonus_segment_description: Mapped[str] = mapped_column(String(255), nullable=True)
+    has_list_price: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    is_bonus_price: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    product_count: Mapped[int] = mapped_column(Integer, nullable=True)
+    multiple_item_promotion: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    stickers: Mapped[JSONB] = mapped_column(JSONB, nullable=True)
+    order_availability_description: Mapped[str] = mapped_column(String(255), nullable=True)
 
+    potential_products: Mapped[list["DbPotentialProduct"]] = relationship(
+        "DbPotentialProduct", back_populates="previous_product_relation"
+    )
 
 class DbProduct(Base):
     """Product model
@@ -249,22 +263,28 @@ class DbProduct(Base):
         unit (str): Product unit
         price (float): Product price
         total_price (float): Product total price
-        potential_products (JSON): Potential products
         product_not_found (bool): Product not found
     """
 
     __tablename__ = "products"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    product_id = Column(String(255))
-    description = Column(String(255))
-    name = Column(String(255))
-    receipt = Column(Integer, ForeignKey("receipts.id"), nullable=False)
-    quantity = Column(Integer)
-    unit = Column(String(255))
-    price = Column(Float)
-    total_price = Column(Float)
-    product_not_found = Column(Boolean)
-    potential_products = Column(JSONB)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    product_id: Mapped[str] = mapped_column(String(255), nullable=True)
+    description: Mapped[str] = mapped_column(String(255), nullable=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=True)
+    receipt: Mapped[int] = mapped_column(Integer, ForeignKey("receipts.id"), nullable=True)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=True)
+    unit: Mapped[str] = mapped_column(String(255), nullable=True)
+    price: Mapped[float] = mapped_column(Float, nullable=True)
+    total_price: Mapped[float] = mapped_column(Float, nullable=True)
+    potential_products: Mapped[JSONB] = mapped_column(JSONB, nullable=True)
+    product_not_found: Mapped[bool] = mapped_column(Boolean, nullable=True)
+
+    receipt_relation: Mapped[DbReceipt] = relationship(
+        "DbReceipt", back_populates="products"
+    )
+    potential_product_relation: Mapped["DbPotentialProduct"] = relationship(
+        "DbPotentialProduct", back_populates="product_relation"
+    )
 
 
 class DbPotentialProduct(Base):
@@ -277,13 +297,20 @@ class DbPotentialProduct(Base):
         potential_previous_product (int): Potential PreviousProduct id"""
 
     __tablename__ = "potential_products"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    product = Column(Integer, ForeignKey("products.id"), nullable=False)
-    potential_ah_product = Column(Integer, ForeignKey("ah_products.id"), nullable=True)
-    potential_previous_product = Column(
-        Integer, ForeignKey("previous_products.id"), nullable=True
-    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    product: Mapped[int] = mapped_column(Integer, ForeignKey("products.id"), nullable=False)
+    potential_ah_product: Mapped[int] = mapped_column(Integer, ForeignKey("ah_products.id"), nullable=True)
+    potential_previous_product: Mapped[int] = mapped_column(Integer, ForeignKey("previous_products.id"), nullable=True)
 
+    product_relation: Mapped[DbProduct] = relationship(
+        "DbProduct", back_populates="potential_product_relation"
+    )
+    ah_product_relation: Mapped[DbAHProduct] = relationship(
+        "DbAHProduct", back_populates="potential_products"
+    )
+    previous_product_relation: Mapped[DbPreviousProduct] = relationship(
+        "DbPreviousProduct", back_populates="potential_products"
+    )
 
 class DbDiscount(Base):
     """Discount model
@@ -297,11 +324,15 @@ class DbDiscount(Base):
     """
 
     __tablename__ = "discounts"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    receipt = Column(Integer, ForeignKey("receipts.id"), nullable=False)
-    type = Column(String(255))
-    description = Column(String(255))
-    amount = Column(Float)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    receipt: Mapped[int] = mapped_column(Integer, ForeignKey("receipts.id"), nullable=False)
+    type: Mapped[str] = mapped_column(String(255), nullable=True)
+    description: Mapped[str] = mapped_column(String(255), nullable=True)
+    amount: Mapped[float] = mapped_column(Float, nullable=True)
+
+    receipt_relation: Mapped[DbReceipt] = relationship(
+        "DbReceipt", back_populates="discounts"
+    )
 
 
 class DbCategory(Base):
@@ -316,12 +347,21 @@ class DbCategory(Base):
     """
 
     __tablename__ = "categories"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(255), nullable=False, unique=False)
-    slug = Column(String(255), nullable=False, unique=False)
-    english = Column(String(255), nullable=False, unique=False)
-    taxonomy_id = Column(String(255), nullable=False, unique=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    slug: Mapped[str] = mapped_column(String(255), nullable=False)
+    english: Mapped[str] = mapped_column(String(255), nullable=False)
+    taxonomy_id: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
 
+    category_product_relation: Mapped["DbCategoryProduct"] = relationship(
+        "DbCategoryProduct", back_populates="category"
+    )
+    category_hierarchy_parent_relation: Mapped["DbCategoryHierarchy"] = relationship(
+        "DbCategoryHierarchy", back_populates="parent_category", foreign_keys="[DbCategoryHierarchy.parent]"
+    )
+    category_hierarchy_child_relation: Mapped["DbCategoryHierarchy"] = relationship(
+        "DbCategoryHierarchy", back_populates="child_category", foreign_keys="[DbCategoryHierarchy.child]"
+    )
 
 class DbLocation(Base):
     """Location model
@@ -336,12 +376,16 @@ class DbLocation(Base):
     """
 
     __tablename__ = "locations"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(255), nullable=False, unique=True)
-    address = Column(String(255))
-    house_number = Column(String(255))
-    city = Column(String(255))
-    postal_code = Column(String(255))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    address: Mapped[str] = mapped_column(String(255))
+    house_number: Mapped[str] = mapped_column(String(255))
+    city: Mapped[str] = mapped_column(String(255))
+    postal_code: Mapped[str] = mapped_column(String(255))
+
+    receipt_relation: Mapped[DbReceipt] = relationship(
+        "DbReceipt", back_populates="location_relation"
+    )
 
 
 class DbCategoryProduct(Base):
@@ -350,13 +394,17 @@ class DbCategoryProduct(Base):
     Attributes:
         id (int): CategoryProduct id
         taxonomy_id (str): Category taxonomy id
-        product_id (str): Product id
+        product_id (str): Product id (webshop id)
     """
 
     __tablename__ = "categories_products"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    taxonomy_id = Column(String(255), ForeignKey("categories.taxonomy_id"))
-    product_id = Column(String(255))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    taxonomy_id: Mapped[str] = mapped_column(String(255), ForeignKey("categories.taxonomy_id"))
+    product_id: Mapped[str] = mapped_column(String(255))
+
+    category: Mapped[DbCategory] = relationship(
+        "DbCategory", back_populates="category_product_relation"
+    )
 
 
 class DbCategoryHierarchy(Base):
@@ -369,6 +417,13 @@ class DbCategoryHierarchy(Base):
     """
 
     __tablename__ = "categories_hierarchy"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    parent = Column(String(255), ForeignKey("categories.taxonomy_id"))
-    child = Column(String(255), ForeignKey("categories.taxonomy_id"))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    parent: Mapped[str] = mapped_column(String(255), ForeignKey("categories.taxonomy_id"))
+    child: Mapped[str] = mapped_column(String(255), ForeignKey("categories.taxonomy_id"))
+
+    parent_category: Mapped[DbCategory] = relationship(
+        "DbCategory", back_populates="category_hierarchy_parent_relation", foreign_keys=[parent]
+    )
+    child_category: Mapped[DbCategory] = relationship(
+        "DbCategory", back_populates="category_hierarchy_child_relation", foreign_keys=[child]
+    )

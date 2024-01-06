@@ -3,7 +3,7 @@ import re
 from math import isnan
 from datetime import datetime
 
-from database.model import DbAHProducts, DbPreviousProducts
+from database.model import DbAHProduct, DbPreviousProduct
 
 
 class MatchedProduct:
@@ -46,17 +46,17 @@ class Product:
 
     def _match_product(
         self,
-        products: list[tuple[float, DbAHProducts | DbPreviousProducts]] | list[dict],
+        products: list[tuple[float, DbAHProduct | DbPreviousProduct]] | list[dict],
         model: str = None,
-    ) -> (DbAHProducts, bool):
+    ) -> (DbAHProduct, bool):
         """Matches the product with the products in the database.
 
         Args:
-            products (list[tuple(float, DbAHProducts|DbPreviousProducts)] | list[dict]): The products to match. If the products are from the database, they are tuples of the similarity score and the product. If the products are from the AH API, they are dictionaries.
+            products (list[tuple(float, DbAHProduct|DbPreviousProduct)] | list[dict]): The products to match. If the products are from the database, they are tuples of the similarity score and the product. If the products are from the AH API, they are dictionaries.
             model (str): The model to match with.
 
         Returns:
-            DbAHProducts: The matched product.
+            DbAHProduct: The matched product.
             bool: Whether the product is matched.
 
         """
@@ -136,11 +136,11 @@ class Product:
         if not self.quantity:
             return
         products = db_handler.search_product(
-            input=self.description, model=DbPreviousProducts
+            input=self.description, model=DbPreviousProduct
         )
         if not products:
             products = db_handler.search_product(
-                input=self.description, model=DbAHProducts
+                input=self.description, model=DbAHProduct
             )
             model = "ah"
         if not products:

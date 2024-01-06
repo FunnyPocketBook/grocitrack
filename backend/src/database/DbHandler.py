@@ -1,8 +1,8 @@
 from util import translate
 from database.setup import engine
 from database.model import (
-    DbAHProducts,
-    DbPreviousProducts,
+    DbAHProduct,
+    DbPreviousProduct,
     DbReceipt,
     DbProduct,
     DbPotentialProduct,
@@ -174,12 +174,12 @@ class DbHandler:
             DbReceipt: The receipt with the given ID"""
         return self._session.query(DbReceipt).get(receipt_id)
 
-    def get_prev_products(self) -> list[DbPreviousProducts]:
+    def get_prev_products(self) -> list[DbPreviousProduct]:
         """Gets all previously bought products from the database
 
         Returns:
-            list[DbPreviousProducts]: The list of previously bought products"""
-        return self._session.query(DbPreviousProducts).all()
+            list[DbPreviousProduct]: The list of previously bought products"""
+        return self._session.query(DbPreviousProduct).all()
 
     def get_products(self) -> list[DbProduct]:
         """Gets all products from the database
@@ -245,7 +245,7 @@ class DbHandler:
         input: str,
         threshold: float = 0.2,
         top_n_scores: int = 5,
-        model: DbAHProducts | DbPreviousProducts = DbAHProducts,
+        model: DbAHProduct | DbPreviousProduct = DbAHProduct,
     ) -> list:
         """Searches for a product in the database. The search is based on the similarity of the product name and the category name.
 
@@ -255,7 +255,7 @@ class DbHandler:
             top_n_scores (int, optional): The number of top scores to return. Defaults to 5.
 
         Returns:
-            list[DbAHProducts]: The list of products
+            list[DbAHProduct]: The list of products
         """
         max_score = func.greatest(
             func.similarity(model.title, func.lower(input)),
@@ -296,12 +296,12 @@ class DbHandler:
         result = result_query.all()
         return result
 
-    def get_ah_produts(self) -> list[DbAHProducts]:
+    def get_ah_produts(self) -> list[DbAHProduct]:
         """Gets all AH products from the database
 
         Returns:
-            list[DbAHProducts]: The list of AH products"""
-        return self._session.query(DbAHProducts).all()
+            list[DbAHProduct]: The list of AH products"""
+        return self._session.query(DbAHProduct).all()
 
     def get_category_hierarchy_parents(
         self, taxonomy_id: str, result: list[DbCategory]
@@ -568,27 +568,27 @@ class DbHandler:
             self._session.rollback()
             raise
 
-    def add_ah_product(self, product: DbAHProducts) -> DbAHProducts:
+    def add_ah_product(self, product: DbAHProduct) -> DbAHProduct:
         """Adds a product to the database
 
         Args:
-            product (DbAHProducts): The product to add
+            product (DbAHProduct): The product to add
 
         Returns:
-            DbAHProducts: The added product"""
+            DbAHProduct: The added product"""
         self._session.add(product)
         self._session.commit()
         log.debug(f'Added AH product "{product.title}" to database')
         return product
 
-    def add_ah_products(self, products: list[DbAHProducts]) -> list[DbAHProducts]:
+    def add_ah_products(self, products: list[DbAHProduct]) -> list[DbAHProduct]:
         """Adds a list of products to the database
 
         Args:
-            products (list[DbAHProducts]): The list of products to add
+            products (list[DbAHProduct]): The list of products to add
 
         Returns:
-            list[DbAHProducts]: The added products"""
+            list[DbAHProduct]: The added products"""
         try:
             self._session.add_all(products)
             self._session.commit()
@@ -599,29 +599,29 @@ class DbHandler:
             raise
         return products
 
-    def add_prev_product(self, product: DbPreviousProducts) -> DbPreviousProducts:
+    def add_prev_product(self, product: DbPreviousProduct) -> DbPreviousProduct:
         """Adds a product to the database
 
         Args:
-            product (DbPreviousProducts): The product to add
+            product (DbPreviousProduct): The product to add
 
         Returns:
-            DbPreviousProducts: The added product"""
+            DbPreviousProduct: The added product"""
         self._session.add(product)
         self._session.commit()
         log.info(f'Added previous product "{product.title}" to database')
         return product
 
     def add_prev_products(
-        self, products: list[DbPreviousProducts]
-    ) -> list[DbPreviousProducts]:
+        self, products: list[DbPreviousProduct]
+    ) -> list[DbPreviousProduct]:
         """Adds a list of products to the database
 
         Args:
-            products (list[DbPreviousProducts]): The list of products to add
+            products (list[DbPreviousProduct]): The list of products to add
 
         Returns:
-            list[DbPreviousProducts]: The added products"""
+            list[DbPreviousProduct]: The added products"""
         existing_prev_products = self.get_prev_products()
         product_ids = [product.webshop_id for product in products]
         # if the ID of the product is already in the database but the name is different, replace the existing product with the new one
